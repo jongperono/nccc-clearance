@@ -1,0 +1,66 @@
+/* Sidebar styling with consistent width */
+.sidebar-container {
+    width: 250px;
+    min-width: 250px;
+    height: 100vh;
+    transition: width 0.3s ease;
+    position: fixed;
+    left: 0;
+    top: 0;
+    z-index: 1000;
+}
+
+.sidebar {
+    width: 250px;
+    min-width: 200px;  /* Prevents it from getting too small */
+}
+
+/* Main content area that adapts to sidebar */
+.dashboard-content {
+    flex-grow: 1;
+    padding: 20px;
+    margin-left: 250px;
+    width: auto;
+    transition: margin-left 0.3s ease;
+}
+
+/* Responsive adjustments for smaller screens */
+@media (max-width: 992px) {
+    .sidebar-container {
+        width: 200px;
+        min-width: 200px;
+    }
+    
+    .dashboard-content {
+        margin-left: 200px;
+    }
+}
+
+@media (max-width: 768px) {
+    .sidebar-container {
+        width: 60px;
+        min-width: 60px;
+    }
+    
+    .dashboard-content {
+        margin-left: 60px;
+    }
+}
+
+@media (max-width: 576px) {
+    .sidebar-container {
+        width: 0;
+        min-width: 0;
+        overflow: hidden;
+    }
+    
+    .dashboard-content {
+        margin-left: 0;
+    }
+    
+    /* Add a class to show sidebar when toggled on mobile */
+    .sidebar-container.show {
+        width: 250px;
+        min-width: 250px;
+    }
+}

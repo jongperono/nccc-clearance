@@ -1,0 +1,83 @@
+/* Custom CSS to override Bootstrap styles */
+
+/* Make all buttons 3D */
+.btn {
+  position: relative;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.15);
+  transform: translateY(0);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  border: none;
+  border-radius: 12px;
+}
+
+.btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 8px rgba(0, 0, 0, 0.2);
+}
+
+.btn:active {
+  transform: translateY(1px);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+/* Add specific 3D effects to button variants */
+.btn-primary {
+  background-image: linear-gradient(to bottom, #0d6efd, #025ce3);
+  border-bottom: 3px solid #0045ad;
+}
+
+.btn-secondary {
+  background-image: linear-gradient(to bottom, #6c757d, #5a6268);
+  border-bottom: 3px solid #494f54;
+}
+
+.btn-success {
+  background-image: linear-gradient(to bottom, #198754, #157347);
+  border-bottom: 3px solid #0f5133;
+}
+
+.btn-danger {
+  background-image: linear-gradient(to bottom, #dc3545, #c82333);
+  border-bottom: 3px solid #a71d2a;
+}
+
+.btn-warning {
+  background-image: linear-gradient(to bottom, #ffc107, #e0a800);
+  border-bottom: 3px solid #ba8b00;
+  color: #212529;
+}
+
+.btn-info {
+  background-image: linear-gradient(to bottom, #0dcaf0, #0bacce);
+  border-bottom: 3px solid #0a8ea0;
+}
+
+.btn-light {
+  background-image: linear-gradient(to bottom, #f8f9fa, #e2e6ea);
+  border-bottom: 3px solid #dae0e5;
+}
+
+.btn-dark {
+  background-image: linear-gradient(to bottom, #212529, #1a1e21);
+  border-bottom: 3px solid #121416;
+}
+
+/* Hide increment/decrement arrows on number inputs */
+/* For Chrome, Safari, Edge, Opera */
+input[type="number"]::-webkit-inner-spin-button,
+input[type="number"]::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+/* For Firefox */
+input[type="number"] {
+  appearance: textfield;
+  -moz-appearance: textfield;
+}
+
+/* For MS Edge legacy */
+input[type="number"]::-ms-clear,
+input[type="number"]::-ms-reveal {
+  display: none;
+}
