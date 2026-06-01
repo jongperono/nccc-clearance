@@ -19,6 +19,7 @@ const ClearanceDetails: React.FC<ClearanceDetailsProps> = ({
     const [clearance, setClearance] = useState<any>(null);
     const [signatories, setSignatories] = useState<any[]>([]);
     const [error, setError] = useState<string | null>(null);
+    const [adding, setAdding] = useState(false);
 
     useEffect(() => {
         if (!show) return;
@@ -109,6 +110,37 @@ const ClearanceDetails: React.FC<ClearanceDetailsProps> = ({
                             showSearch={false}
                             showPagination={false}
                         />
+                        <div className="d-flex justify-content-end mt-3">
+                            <Button
+                                variant="primary"
+                                onClick={async () => {
+                                    if (!clearance) return;
+                                    const input = window.prompt('Enter employee ID of signatory to add:');
+                                    if (!input) return;
+                                    const id = Number(input);
+                                    if (Number.isNaN(id)) {
+                                        window.alert('Invalid employee ID');
+                                        return;
+                                    }
+                                    try {
+                                        setAdding(true);
+                                        await apiRequest(`/clearance/${clearanceId}/assign-template`, 'PUT', { signatory_ids: [id] });
+                                        // refetch details
+                                        const res = await apiRequest(`/clearance/${clearanceId}/details`, 'GET');
+                                        const apiData = res?.data?.data || res?.data;
+                                        setClearance(apiData.clearance);
+                                        setSignatories(apiData.signatories || []);
+                                    } catch (err: any) {
+                                        window.alert(err?.message || 'Failed to add signatory');
+                                    } finally {
+                                        setAdding(false);
+                                    }
+                                }}
+                                disabled={adding}
+                            >
+                                {adding ? <><Spinner as="span" animation="border" size="sm"/> Adding...</> : 'Add Signatory'}
+                            </Button>
+                        </div>
                     </>
                 ) : (
                     <div>No clearance data found.</div>
