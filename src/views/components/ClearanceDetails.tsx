@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
-import { Modal, Spinner, Button } from "react-bootstrap";
+import { Modal, Spinner, Button, Form, ListGroup, InputGroup } from "react-bootstrap";
+import { useCustomAlert } from "../../utils/CustomAlert";
 import DynamicTable from "../../utils/DynamicTable";
 import ncccLogo from "../../assets/nccc_logo.webp";
 import { apiRequest } from "../../utils/ApiService";
@@ -20,6 +21,11 @@ const ClearanceDetails: React.FC<ClearanceDetailsProps> = ({
     const [signatories, setSignatories] = useState<any[]>([]);
     const [error, setError] = useState<string | null>(null);
     const [adding, setAdding] = useState(false);
+    const [showAddModal, setShowAddModal] = useState(false);
+    const [availableSignatories, setAvailableSignatories] = useState<any[]>([]);
+    const [searchTerm, setSearchTerm] = useState("");
+    const [selectedSignatory, setSelectedSignatory] = useState<any | null>(null);
+    const { showAlert, AlertComponent } = useCustomAlert();
 
     useEffect(() => {
         if (!show) return;
@@ -42,6 +48,20 @@ const ClearanceDetails: React.FC<ClearanceDetailsProps> = ({
 
         fetchDetails();
     }, [show, clearanceId]);
+
+    useEffect(() => {
+        if (!showAddModal) return;
+        const fetchSignatories = async () => {
+            try {
+                const res = await apiRequest('/signatories', 'GET');
+                const apiData = res?.data?.data || res?.data;
+                setAvailableSignatories(Array.isArray(apiData) ? apiData : []);
+            } catch (err: any) {
+                showAlert('error', err?.message || 'Failed to fetch signatories');
+            }
+        };
+        fetchSignatories();
+    }, [showAddModal]);
 
     return (
         <Modal show={show} onHide={onHide} size="lg">
@@ -111,36 +131,95 @@ const ClearanceDetails: React.FC<ClearanceDetailsProps> = ({
                             showPagination={false}
                         />
                         <div className="d-flex justify-content-end mt-3">
-                            <Button
-                                variant="primary"
-                                onClick={async () => {
-                                    if (!clearance) return;
-                                    const input = window.prompt('Enter employee ID of signatory to add:');
-                                    if (!input) return;
-                                    const id = Number(input);
-                                    if (Number.isNaN(id)) {
-                                        window.alert('Invalid employee ID');
-                                        return;
-                                    }
-                                    try {
-                                        setAdding(true);
-                                        await apiRequest(`/clearance/${clearanceId}/assign-template`, 'PUT', { signatory_ids: [id] });
-                                        // refetch details
-                                        const res = await apiRequest(`/clearance/${clearanceId}/details`, 'GET');
-                                        const apiData = res?.data?.data || res?.data;
-                                        setClearance(apiData.clearance);
-                                        setSignatories(apiData.signatories || []);
-                                    } catch (err: any) {
-                                        window.alert(err?.message || 'Failed to add signatory');
-                                    } finally {
-                                        setAdding(false);
-                                    }
-                                }}
-                                disabled={adding}
-                            >
-                                {adding ? <><Spinner as="span" animation="border" size="sm"/> Adding...</> : 'Add Signatory'}
+                            <Button variant="primary" onClick={() => setShowAddModal(true)} disabled={adding}>
+                                Add Signatory
                             </Button>
                         </div>
+
+                        {/* Add Signatory Modal */}
+                        <Modal show={showAddModal} onHide={() => setShowAddModal(false)}>
+                            <Modal.Header closeButton>
+                                <Modal.Title>Add Signatory</Modal.Title>
+                            </Modal.Header>
+                            <Modal.Body>
+                                {AlertComponent}
+                                <InputGroup className="mb-3">
+                                    <Form.Control
+                                        placeholder="Search signatory by name or ID"
+                                        value={searchTerm}
+                                        onChange={(e) => setSearchTerm(e.target.value)}
+                                    />
+                                    <Button variant="outline-secondary" onClick={async () => {
+                                        // fetch signatories
+                                        try {
+                                            const res = await apiRequest('/signatories', 'GET');
+                                            const apiData = res?.data?.data || res?.data;
+                                            setAvailableSignatories(Array.isArray(apiData) ? apiData : []);
+                                        } catch (err: any) {
+                                            showAlert('error', err?.message || 'Failed to fetch signatories');
+                                        }
+                                    }}>Refresh</Button>
+                                </InputGroup>
+
+                                <div style={{ maxHeight: 300, overflowY: 'auto' }}>
+                                    <ListGroup>
+                                        {(availableSignatories.filter(s => {
+                                            const q = searchTerm.trim().toLowerCase();
+                                            if (!q) return true;
+                                            const name = `${s.first_name || ''} ${s.middle_name || ''} ${s.last_name || ''}`.toLowerCase();
+                                            return name.includes(q) || String(s.employee_id).includes(q);
+                                        })).map(s => (
+                                            <ListGroup.Item
+                                                key={s.employee_id}
+                                                active={selectedSignatory?.employee_id === s.employee_id}
+                                                onClick={() => setSelectedSignatory(s)}
+                                                style={{ cursor: 'pointer' }}
+                                            >
+                                                <div className="d-flex justify-content-between align-items-center">
+                                                    <div>
+                                                        <div className="fw-semibold">{s.first_name} {s.middle_name || ''} {s.last_name}</div>
+                                                        <small className="text-muted">ID: {s.employee_id} — {s.company_id || ''} / {s.branch_id || ''}</small>
+                                                    </div>
+                                                    <div>
+                                                        {selectedSignatory?.employee_id === s.employee_id ? <span className="badge bg-primary">Selected</span> : null}
+                                                    </div>
+                                                </div>
+                                            </ListGroup.Item>
+                                        ))}
+                                    </ListGroup>
+                                </div>
+                            </Modal.Body>
+                            <Modal.Footer>
+                                <Button variant="secondary" onClick={() => setShowAddModal(false)}>Cancel</Button>
+                                <Button
+                                    variant="success"
+                                    onClick={async () => {
+                                        if (!selectedSignatory) {
+                                            showAlert('error', 'Please select a signatory to add');
+                                            return;
+                                        }
+                                        try {
+                                            setAdding(true);
+                                            await apiRequest(`/clearance/${clearanceId}/assign-template`, 'PUT', { signatory_ids: [selectedSignatory.employee_id] });
+                                            showAlert('success', 'Signatory added successfully');
+                                            setShowAddModal(false);
+                                            // refetch details
+                                            const res = await apiRequest(`/clearance/${clearanceId}/details`, 'GET');
+                                            const apiData = res?.data?.data || res?.data;
+                                            setClearance(apiData.clearance);
+                                            setSignatories(apiData.signatories || []);
+                                        } catch (err: any) {
+                                            showAlert('error', err?.message || 'Failed to add signatory');
+                                        } finally {
+                                            setAdding(false);
+                                        }
+                                    }}
+                                    disabled={adding}
+                                >
+                                    {adding ? <><Spinner as="span" animation="border" size="sm"/> Adding...</> : 'Add Selected'}
+                                </Button>
+                            </Modal.Footer>
+                        </Modal>
                     </>
                 ) : (
                     <div>No clearance data found.</div>
