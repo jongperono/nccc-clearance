@@ -54,6 +54,7 @@ const EmployeeTable = () => {
         can_create_branches: false,
         can_create_clearance_requests: false,
         can_clear_clearances: false, // renamed from can_approve_clearances
+        can_add_signatory: false,
     });
     const { showAlert, AlertComponent } = useCustomAlert();
 
@@ -181,6 +182,7 @@ const EmployeeTable = () => {
             can_access_all_clearances: false,
             can_create_clearance_requests: false,
             can_clear_clearances: false, // renamed from can_approve_clearances
+            can_add_signatory: false,
         });
     };
 
@@ -262,6 +264,7 @@ const EmployeeTable = () => {
             can_access_all_clearances: employee.can_access_all_clearances,
             can_create_clearance_requests: employee.can_create_clearance_requests,
             can_clear_clearances: employee.can_clear_clearances, // renamed from can_approve_clearances
+            can_add_signatory: employee.can_add_signatory,
         });
         setIsEditing(true);
         setShowModal(true);
