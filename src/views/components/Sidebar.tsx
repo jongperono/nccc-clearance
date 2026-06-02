@@ -19,6 +19,9 @@ interface SidebarProps {
 // Define a type for our permissions
 interface Permissions {
     employee_id?: number;
+    first_name?: string;
+    last_name?: string;
+    full_name?: string;
     is_signatory?: boolean;
     can_assign_clearances?: boolean;
     can_create_roles?: boolean;
@@ -103,6 +106,9 @@ const Sidebar: React.FC<SidebarProps> = ({ onSelect }) => {
     // Safely extract permissions with defaults to false
     const {
         employee_id = null,
+        first_name = '',
+        last_name = '',
+        full_name = '',
         can_create_roles = false,
         can_create_accounts = false,
         can_create_companies = false,
@@ -209,6 +215,9 @@ const Sidebar: React.FC<SidebarProps> = ({ onSelect }) => {
                 )}
             </div>
             <div className="sidebar-bottom">
+                <div className="employee-info">
+                    <p className="employee-name">{employee_id}{full_name || `${first_name} ${last_name}`}</p>
+                </div>
                 <button className="sidebar-btn logout-btn" onClick={handleLogout}>
                     <FaSignOutAlt className="icon logout-icon" />
                     <span className="logout-text">Log out</span>
