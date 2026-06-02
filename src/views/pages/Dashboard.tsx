@@ -13,11 +13,14 @@ import Roles from "../components/Roles";
 import Sidebar from "../components/Sidebar";
 import Departments from "../components/Departments";
 import Clearances from "../components/Clearances";
+import ChangePasswordModal from "../components/ChangePasswordModal";
 
 const Dashboard: React.FC = () => {
     const [selectedPage, setSelectedPage] = useState<string>("Home");
     const [showSidebar, setShowSidebar] = useState(false);
     const [isMobile, setIsMobile] = useState(window.innerWidth <= 576);
+    const [showChangePasswordModal, setShowChangePasswordModal] = useState(false);
+    const [employeeId, setEmployeeId] = useState<number | undefined>(undefined);
 
     // Handle window resize events
     useEffect(() => {
@@ -34,6 +37,18 @@ const Dashboard: React.FC = () => {
 
     const toggleSidebar = () => {
         setShowSidebar(!showSidebar);
+    };
+
+    const handlePageSelect = (page: string) => {
+        if (page === "ChangePassword") {
+            // Get employee_id from localStorage
+            const empId = localStorage.getItem('employee_id');
+            setEmployeeId(empId ? parseInt(empId) : undefined);
+            setShowChangePasswordModal(true);
+        } else {
+            setSelectedPage(page);
+            if (isMobile) setShowSidebar(false);
+        }
     };
 
     const pages: Record<string, React.ReactNode> = {
@@ -54,10 +69,7 @@ const Dashboard: React.FC = () => {
         <Container fluid className="d-flex p-0">
             {/* Sidebar with responsive width */}
             <div className={`sidebar-container ${showSidebar ? 'show' : ''}`}>
-                <Sidebar onSelect={(page) => {
-                    setSelectedPage(page);
-                    if (isMobile) setShowSidebar(false);
-                }} />
+                <Sidebar onSelect={handlePageSelect} />
             </div>
     
             {/* Main Content */}
@@ -72,6 +84,13 @@ const Dashboard: React.FC = () => {
                 )}
                 {pages[selectedPage] || <div>Page not found</div>}
             </div>
+
+            {/* Change Password Modal */}
+            <ChangePasswordModal 
+                show={showChangePasswordModal} 
+                onHide={() => setShowChangePasswordModal(false)}
+                employeeId={employeeId}
+            />
         </Container>
     );
 };

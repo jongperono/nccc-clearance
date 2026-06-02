@@ -1,13 +1,14 @@
 import React, { useState, useEffect } from "react";
 import {
     FaHome, FaTasks, FaFileAlt, FaHistory, FaSignOutAlt,
-    FaUser, FaDatabase, FaChevronDown, FaChevronRight, FaUserTie, 
+    FaUser, FaDatabase, FaChevronDown, FaChevronRight, FaUserTie,
     FaWarehouse,
     FaBuilding,
     FaCity,
-    FaClipboardCheck
+    FaClipboardCheck,
+    FaLock
 } from "react-icons/fa";
-import "./Sidebar.css"; 
+import "./Sidebar.css";
 import { apiRequest } from "../../utils/ApiService";
 import { useCustomAlert } from "../../utils/CustomAlert";
 
@@ -57,7 +58,7 @@ const Sidebar: React.FC<SidebarProps> = ({ onSelect }) => {
         apiRequest<any>("/check-permissions", "GET")
             .then(response => {
                 console.log("Full API response:", response);
-                
+
                 // The permissions are nested inside response.data.data
                 if (response.data && response.data.data) {
                     console.log("Setting permissions to:", response.data.data);
@@ -123,10 +124,10 @@ const Sidebar: React.FC<SidebarProps> = ({ onSelect }) => {
     // Check if user should see Master Files section
     // Only employee 1 can access Master Files menu
     const shouldShowMasterFiles = employee_id === 1 && (
-        can_create_roles || 
-        can_create_accounts || 
-        can_create_companies || 
-        can_create_departments || 
+        can_create_roles ||
+        can_create_accounts ||
+        can_create_companies ||
+        can_create_departments ||
         can_create_branches
     );
 
@@ -139,24 +140,24 @@ const Sidebar: React.FC<SidebarProps> = ({ onSelect }) => {
                 <h6 className="sidebar-title">Online Clearance</h6>
             </div>
             <div className="sidebar-menu">
-                <button 
-                    className="sidebar-btn active" 
+                <button
+                    className="sidebar-btn active"
                     onClick={() => onSelect("Home")}
                 >
                     <FaHome className="icon" />
                     <span>Home</span>
                 </button>
-                <button className="sidebar-btn" onClick={() => onSelect("Clearances")}> 
+                <button className="sidebar-btn" onClick={() => onSelect("Clearances")}>
                     <FaClipboardCheck className="icon" />
                     <span>Clearances</span>
                 </button>
                 {can_create_clearance_requests && (
-                    <button className="sidebar-btn" onClick={() => onSelect("Requests")}> 
+                    <button className="sidebar-btn" onClick={() => onSelect("Requests")}>
                         <FaTasks className="icon" />
                         <span>Requests</span>
                     </button>
                 )}
-                
+
                 {/* Master Files Section with Dropdown */}
                 {shouldShowMasterFiles && (
                     <>
@@ -207,7 +208,7 @@ const Sidebar: React.FC<SidebarProps> = ({ onSelect }) => {
                         <span>Templates</span>
                     </button>
                 )}
-                {can_access_logs && (
+                {can_access_logs && employee_id === 1 && (
                     <button className="sidebar-btn" onClick={() => onSelect("Logs")}>
                         <FaHistory className="icon" />
                         <span>Logs</span>
@@ -216,8 +217,12 @@ const Sidebar: React.FC<SidebarProps> = ({ onSelect }) => {
             </div>
             <div className="sidebar-bottom">
                 <div className="employee-info">
-                    <p className="employee-name">{employee_id}{full_name || `${first_name} ${last_name}`}</p>
+                    <p className="employee-name">{employee_id} - {full_name || `${first_name} ${last_name}`}</p>
                 </div>
+                <button className="sidebar-btn" onClick={() => onSelect("ChangePassword")}>
+                    <FaLock className="icon" />
+                    <span>Change Password</span>
+                </button>
                 <button className="sidebar-btn logout-btn" onClick={handleLogout}>
                     <FaSignOutAlt className="icon logout-icon" />
                     <span className="logout-text">Log out</span>
