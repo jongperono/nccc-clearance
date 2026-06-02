@@ -18,6 +18,7 @@ interface SidebarProps {
 
 // Define a type for our permissions
 interface Permissions {
+    employee_id?: number;
     is_signatory?: boolean;
     can_assign_clearances?: boolean;
     can_create_roles?: boolean;
@@ -101,6 +102,7 @@ const Sidebar: React.FC<SidebarProps> = ({ onSelect }) => {
 
     // Safely extract permissions with defaults to false
     const {
+        employee_id = null,
         can_create_roles = false,
         can_create_accounts = false,
         can_create_companies = false,
@@ -113,12 +115,14 @@ const Sidebar: React.FC<SidebarProps> = ({ onSelect }) => {
     } = permissions || {};
 
     // Check if user should see Master Files section
-    const shouldShowMasterFiles = 
+    // Only employee 1 can access Master Files menu
+    const shouldShowMasterFiles = employee_id === 1 && (
         can_create_roles || 
         can_create_accounts || 
         can_create_companies || 
         can_create_departments || 
-        can_create_branches;
+        can_create_branches
+    );
 
     return (
         <div className="sidebar">
