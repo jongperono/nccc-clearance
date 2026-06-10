@@ -123,7 +123,7 @@ const Sidebar: React.FC<SidebarProps> = ({ onSelect }) => {
 
     // Check if user should see Master Files section
     // Only employee 1 can access Master Files menu
-    const shouldShowMasterFiles = employee_id === 1 && (
+    const shouldShowMasterFiles =  (
         can_create_roles ||
         can_create_accounts ||
         can_create_companies ||
