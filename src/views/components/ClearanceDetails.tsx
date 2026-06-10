@@ -25,12 +25,25 @@ const ClearanceDetails: React.FC<ClearanceDetailsProps> = ({
     const [availableSignatories, setAvailableSignatories] = useState<any[]>([]);
     const [searchTerm, setSearchTerm] = useState("");
     const [selectedSignatory, setSelectedSignatory] = useState<any | null>(null);
+    const [canAddSignatory, setCanAddSignatory] = useState(false);
     const { showAlert, AlertComponent } = useCustomAlert();
 
     useEffect(() => {
         if (!show) return;
         setLoading(true);
         setError(null);
+
+        const fetchPermissions = async () => {
+            try {
+                const res = await apiRequest<any>("/check-permissions", "GET");
+                const perms = res?.data?.data;
+                if (perms) {
+                    setCanAddSignatory(!!perms.can_add_signatory);
+                }
+            } catch (err) {
+                console.error("Failed to check permissions", err);
+            }
+        };
 
         const fetchDetails = async () => {
             try {const clearanceRes = await apiRequest(`/clearance/${clearanceId}/details`, "GET") as any;
@@ -46,6 +59,7 @@ const ClearanceDetails: React.FC<ClearanceDetailsProps> = ({
             }
         };
 
+        fetchPermissions();
         fetchDetails();
     }, [show, clearanceId]);
 
@@ -130,11 +144,13 @@ const ClearanceDetails: React.FC<ClearanceDetailsProps> = ({
                             showSearch={false}
                             showPagination={false}
                         />
-                        <div className="d-flex justify-content-end mt-3">
-                            <Button variant="primary" onClick={() => setShowAddModal(true)} disabled={adding}>
-                                Add Signatory
-                            </Button>
-                        </div>
+                        {canAddSignatory && (
+                            <div className="d-flex justify-content-end mt-3">
+                                <Button variant="primary" onClick={() => setShowAddModal(true)} disabled={adding}>
+                                    Add Signatory
+                                </Button>
+                            </div>
+                        )}
 
                         {/* Add Signatory Modal */}
                         <Modal show={showAddModal} onHide={() => setShowAddModal(false)}>
