@@ -36,7 +36,7 @@ const Dashboard = () => {
         const fetchClearances = async () => {
             setLoading(true);
             try {
-                const response = await apiRequest("/my-clearances", "GET");
+                const response = await apiRequest("/my-clearances", "GET") as any;
                 const responseData = response?.data;
 
                 // Merge clearances and other_clearances if both exist
@@ -142,7 +142,7 @@ const Dashboard = () => {
             }
         },
         {
-            dataField: "actions",
+            dataField: "actions" as keyof ClearanceItem,
             text: "Actions",
             formatter: (_cell, row) => (
                 <Button
@@ -211,14 +211,14 @@ const Dashboard = () => {
                         responsive
                         title="Clearance List"
                         showSearch
-                        classes={{
-                            table: 'table-sm',
-                            header: 'py-2',
-                            row: 'align-middle'
-                        }}
-                        style={{
-                            cell: { padding: '0.4rem 0.6rem' }
-                        }}
+                        // classes={{
+                        //     table: 'table-sm',
+                        //     header: 'py-2',
+                        //     row: 'align-middle'
+                        // }}
+                        // style={{
+                        //     cell: { padding: '0.4rem 0.6rem' }
+                        // }}
                     />
                 )}
             </div>
@@ -253,7 +253,7 @@ const Dashboard = () => {
             <ClearanceDetails
                 show={showDetailsModal}
                 onHide={() => setShowDetailsModal(false)}
-                clearanceId={selectedClearanceId}
+                clearanceId={selectedClearanceId ?? 0}
             />
         </div>
     );

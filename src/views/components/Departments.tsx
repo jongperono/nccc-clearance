@@ -187,9 +187,9 @@ const DepartmentManagement: React.FC = () => {
             sortable: false,
         },
         {
-            dataField: "actions",
+            dataField: "actions" as keyof Department,
             text: "Actions",
-            formatter: (_cell: string, row: Department) => (
+            formatter: (_cell: string | undefined, row: Department) => (
                 <>
                     <Button
                         variant="warning"

@@ -43,7 +43,7 @@ const Clearances = () => {
             setLoading(true);
             
             try {
-                const response = await apiRequest("/my-clearances", "GET");
+                const response = await apiRequest("/my-clearances", "GET") as any;
                 const responseData = response?.data;
 
                 // If backend returns { clearances, other_clearances }
@@ -258,7 +258,7 @@ const Clearances = () => {
                 else if (status === "cleared") badgeClass = "bg-info";
                 return (
                     <span className={`badge ${badgeClass}`}>
-                        {cell}
+                        {cell as string}
                     </span>
                 );
             }
@@ -433,14 +433,14 @@ const Clearances = () => {
                         responsive
                         title="My Clearance List"
                         showSearch
-                        classes={{
-                            table: 'table-sm',
-                            header: 'py-2',
-                            row: 'align-middle'
-                        }}
-                        style={{
-                            cell: { padding: '0.4rem 0.6rem' }
-                        }}
+                        // classes={{
+                        //     table: 'table-sm',
+                        //     header: 'py-2',
+                        //     row: 'align-middle'
+                        // }}
+                        // style={{
+                        //     cell: { padding: '0.4rem 0.6rem' }
+                        // }}
                     />
                 </div>
                 {/* PAGINATION for My Clearances */}
@@ -487,14 +487,14 @@ const Clearances = () => {
                             responsive
                             title="Other Clearance List"
                             showSearch
-                            classes={{
-                                table: 'table-sm',
-                                header: 'py-2',
-                                row: 'align-middle'
-                            }}
-                            style={{
-                                cell: { padding: '0.4rem 0.6rem' }
-                            }}
+                            // classes={{
+                            //     table: 'table-sm',
+                            //     header: 'py-2',
+                            //     row: 'align-middle'
+                            // }}
+                            // style={{
+                            //     cell: { padding: '0.4rem 0.6rem' }
+                            // }}
                         />
                     </div>
                     {/* PAGINATION for Other Clearances */}
@@ -537,7 +537,7 @@ const Clearances = () => {
             <ClearanceDetails
                 show={showDetailsModal}
                 onHide={() => setShowDetailsModal(false)}
-                clearanceId={selectedClearanceId}
+                clearanceId={selectedClearanceId ?? 0}
             />
         </div>
     );

@@ -8,22 +8,22 @@ import CreateTemplate from "./TemplateCreation";
 import TemplatePreviewModal from "./TemplatePreviewModal";
 
 // Template list and management
-interface SignatoryData {
-    template_id: number;
-    employee_id: number;
-    employee: {
-        employee_id: number;
-        first_name: string;
-        last_name: string;
-        email: string;
-        role_id: string;
-        company_id: string;
-        department_id: string;
-        branch_id: string;
-    };
-    createdAt?: string;
-    updatedAt?: string; 
-}
+// interface SignatoryData {
+//     template_id: number;
+//     employee_id: number;
+//     employee: {
+//         employee_id: number;
+//         first_name: string;
+//         last_name: string;
+//         email: string;
+//         role_id: string;
+//         company_id: string;
+//         department_id: string;
+//         branch_id: string;
+//     };
+//     createdAt?: string;
+//     updatedAt?: string; 
+// }
 
 interface TemplateData {
     template_id: number;
@@ -34,11 +34,12 @@ interface TemplateData {
     updater_employee_id?: number;
     creator_name?: string;
     updater_name?: string;
+    createdAt?: string;  
 }
 
 const Template: React.FC = () => {
     const [templates, setTemplates] = useState<TemplateData[]>([]);
-    const [selectedTemplate, setSelectedTemplate] = useState<TemplateData | null>(null);
+    const [_selectedTemplate, setSelectedTemplate] = useState<TemplateData | null>(null);
     const [showCreateTemplate, setShowCreateTemplate] = useState(false);
     const [showViewModal, setShowViewModal] = useState(false);
     const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
@@ -53,7 +54,7 @@ const Template: React.FC = () => {
     // Fetch templates from API
     const fetchTemplates = async () => {
         try {
-            const response = await apiRequest("/templates", "GET");
+            const response = await apiRequest("/templates", "GET") as any;
             const rawTemplates = response.data?.data || [];
             const mappedTemplates = rawTemplates.map((tpl: any) => ({
                 template_id: tpl.template_id,
@@ -82,10 +83,10 @@ const Template: React.FC = () => {
         setTemplatePreviewData({
             title: template.title,
             purpose: template.purpose,
-            footer_message: template.footer_message
+            footer_message: template.footer_message ?? ""
         });
         try {
-            const signatoryResponse = await apiRequest(`/template/${template.template_id}/signatories`, "GET");
+            const signatoryResponse = await apiRequest(`/template/${template.template_id}/signatories`, "GET") as any;
             if (signatoryResponse?.data?.success) {
                 const mappedSignatories = (signatoryResponse.data.data || []).map((sig: any) => ({
                     id: sig.employee_id,
@@ -121,7 +122,7 @@ const Template: React.FC = () => {
         fetchTemplates();
     }, []);
 
-    const columns: ColumnDefinition<TemplateData <string, unknown>  & {creator_email?: string}>[] = [
+    const columns: ColumnDefinition<TemplateData & {creator_email?: string}>[] = [
         {
             dataField: "title",
             text: "Template Title", // changed here

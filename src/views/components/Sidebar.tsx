@@ -117,7 +117,7 @@ const Sidebar: React.FC<SidebarProps> = ({ onSelect }) => {
         can_create_branches = false,
         can_create_templates = false,
         can_access_logs = false,
-        can_access_all_clearances = false, // <-- Added
+        // can_access_all_clearances = false, // <-- Added
         can_create_clearance_requests = false, // <-- Added
     } = permissions || {};
 

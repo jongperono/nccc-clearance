@@ -17,7 +17,7 @@ interface ClearanceRequestDetailsProps {
 
 const ClearanceRequestDetails: React.FC<ClearanceRequestDetailsProps> = ({
     id,
-    companyId,
+    // companyId,
     name,
     email,
     branch,

@@ -180,20 +180,20 @@ const Branches: React.FC = () => {
             sortable: true
         },
         {
-            dataField: "actions",
+            dataField: "actions" as keyof Branch,
             text: "Actions",
-            formatter: (_cell: string, row: Branch) => (
+            formatter: (_cell: string | number | null | undefined, row: Branch) => (
                 <>
                     <Button
                         variant="warning"
                         size="sm"
-                        className="text-black"
+                        className="text-black me-2"
                         onClick={(e) => {
                             e.stopPropagation();
                             handleEditBranch(row);
                         }}
                         title="Edit"
-                        classname="me-2"
+                        // className="me-2"
                     >
                         Edit
                     </Button>

@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Container, Button, Image } from 'react-bootstrap';
 import { useState } from 'react';
 import LoginModal from '../components/LoginModal';
+import bgImg from "../../assets/bg_img.webp";
 
 export default function Main() {
     const navigate = useNavigate();
@@ -22,7 +23,8 @@ export default function Main() {
 
     return (
         <div className="landing-page">
-            <div className="bg-img"></div>
+            {/* <div className="bg-img"></div> */}
+            <div className="bg-img" style={{ backgroundImage: `url(${bgImg})` }}></div>
             <Container className="d-flex flex-column align-items-center justify-content-center mt-5 text-center">
                 <Image 
                     src="src/assets/nccc_logo.webp" 

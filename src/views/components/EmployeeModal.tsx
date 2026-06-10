@@ -13,7 +13,7 @@ interface Employee {
     last_name: string;
     phone_number: string | number;
     email: string;
-    password: string;
+    password?: string;
     role_id: string;
     branch_id: string;
     department_id: string;

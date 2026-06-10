@@ -17,7 +17,7 @@ interface Clearance {
 }
 
 const ClearanceStatus: React.FC = () => {
-  const [clearances, setClearances] = useState<Clearance[]>([
+  const [clearances] = useState<Clearance[]>([
     {
       id: "1",
       department: "ISD Dept.",

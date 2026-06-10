@@ -6,12 +6,14 @@ import { FaSort, FaSortUp, FaSortDown } from 'react-icons/fa';
 import { IconType } from 'react-icons';
 
 // Column definition for table
-export type ColumnDefinition<T extends Record<string, unknown>> = {
+// export type ColumnDefinition<T extends Record<string, unknown>> = {
+export type ColumnDefinition<T extends object> = {
     dataField: keyof T;
     text: string; // Column header
     sortable?: boolean;
     minWidth?: string | number;
     formatter?: (cell: T[keyof T], row: T) => React.ReactNode;
+    headerStyle?: React.CSSProperties; 
 };
 
 // Custom button type for header actions
@@ -29,7 +31,8 @@ type SortConfig<T> = {
 };
 
 // Props for DynamicTable
-export type DynamicTableProps<T extends Record<string, unknown>> = {
+// export type DynamicTableProps<T extends Record<string, unknown>> = {
+export type DynamicTableProps<T extends object> = {
     data: T[];
     columns: ColumnDefinition<T>[];
     keyField: keyof T;
@@ -44,12 +47,15 @@ export type DynamicTableProps<T extends Record<string, unknown>> = {
     showPagination?: boolean;
     pageSize?: number;
     className?: string;
+    tableClasses?: string;
+    containerClasses?: string;
     additionalFilters?: React.ReactNode;
     filterPredicate?: (item: T, searchTerm: string) => boolean;
 };
 
 // Main table component
-const DynamicTable = <T extends Record<string, unknown>>({
+// const DynamicTable = <T extends Record<string, unknown>>({
+const DynamicTable = <T extends object>({
     data = [],
     columns = [],
     keyField,

@@ -181,7 +181,7 @@ const RoleManagement: React.FC = () => {
             sortable: true
         },
         {
-            dataField: 'actions',
+            dataField: 'actions' as keyof Role,
             text: 'Actions',
             formatter: (_cell: any, row: Role) => (
                 <>

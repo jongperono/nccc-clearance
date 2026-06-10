@@ -10,6 +10,7 @@ import TemplatePreviewModal from "./TemplatePreviewModal";
 // --- Interfaces ---
 interface ClearanceRequest {
     id: number;
+    requestId?: string; 
     company: string;
     company_id: string;
     name: string;
@@ -39,6 +40,7 @@ interface TemplateData {
     department_id: number;
     company_id: number;
     purpose: string;
+    footer_message?: string; 
 }
 
 interface Company {
@@ -81,7 +83,7 @@ const ClearanceRequest: React.FC = () => {
     const [selectedRequest, setSelectedRequest] = useState<ClearanceRequest | null>(null);
     const [filteredTemplates, setFilteredTemplates] = useState<TemplateData[]>([]);
     const [assigning, setAssigning] = useState(false);
-    const [templates, setTemplates] = useState<TemplateData[]>([]);
+    // const [templates, setTemplates] = useState<TemplateData[]>([]);
     // --- Template Preview Modal State ---
     const [showViewModal, setShowViewModal] = useState(false);
     const [templatePreviewData, setTemplatePreviewData] = useState<{ title: string; purpose: string; footer_message?: string }>({ title: "", purpose: "", footer_message: "" });
@@ -102,7 +104,7 @@ const ClearanceRequest: React.FC = () => {
         {
             dataField: "id",
             text: "Action",
-            formatter: (_cell: number, row: ClearanceRequest) => (
+            formatter: (_cell: string | number | undefined, row: ClearanceRequest) => (
                 <Button
                     variant="success"
                     size="sm"
@@ -114,36 +116,36 @@ const ClearanceRequest: React.FC = () => {
         }
     ];
 
-    const templateColumns: ColumnDefinition<TemplateData>[] = [
-        { dataField: "title", text: "Title", sortable: true },
-        { dataField: "purpose", text: "Purpose", sortable: true },
-        {
-            dataField: "template_id",
-            text: "Actions",
-            headerStyle: { width: '160px' },
-            formatter: (_cell: number, row: TemplateData) => (
-                <>
-                    <Button
-                        variant="primary"
-                        size="sm"
-                        onClick={() => handleViewTemplate(row)}
-                        className="ms-2"
-                    >
-                        View
-                    </Button>
-                    <Button
-                        variant="success"
-                        size="sm"
-                        onClick={() => handleAssignTemplate(row)}
-                        disabled={assigning}
-                        className="ms-2"
-                    >
-                        {assigning ? <Spinner animation="border" size="sm" /> : "Assign"}
-                    </Button>
-                </>
-            )
-        }
-    ];
+    // const templateColumns: ColumnDefinition<TemplateData>[] = [
+    //     { dataField: "title", text: "Title", sortable: true },
+    //     { dataField: "purpose", text: "Purpose", sortable: true },
+    //     {
+    //         dataField: "template_id",
+    //         text: "Actions",
+    //         headerStyle: { width: '160px' },
+    //         formatter: (_cell: string | number | undefined, row: TemplateData) => (
+    //             <>
+    //                 <Button
+    //                     variant="primary"
+    //                     size="sm"
+    //                     onClick={() => handleViewTemplate(row)}
+    //                     className="ms-2"
+    //                 >
+    //                     View
+    //                 </Button>
+    //                 <Button
+    //                     variant="success"
+    //                     size="sm"
+    //                     onClick={() => handleAssignTemplate(row)}
+    //                     disabled={assigning}
+    //                     className="ms-2"
+    //                 >
+    //                     {assigning ? <Spinner animation="border" size="sm" /> : "Assign"}
+    //                 </Button>
+    //             </>
+    //         )
+    //     }
+    // ];
 
     // --- Filtering ---
     const filterPredicate = (request: ClearanceRequest, searchTerm: string) =>
@@ -164,7 +166,7 @@ const ClearanceRequest: React.FC = () => {
     ];
 
     // --- Form Handlers ---
-    const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+    const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
         const { name, value } = e.target;
         setNewRequest(prev => ({
             ...prev,
@@ -237,7 +239,7 @@ const ClearanceRequest: React.FC = () => {
             footer_message: template.footer_message
         });
         try {
-            const signatoryResponse = await apiRequest(`/template/${template.template_id}/signatories`, "GET");
+            const signatoryResponse = await apiRequest(`/template/${template.template_id}/signatories`, "GET") as any;
             if (signatoryResponse?.data?.success) {
                 const mappedSignatories = (signatoryResponse.data.data || []).map((sig: any) => ({
                     id: sig.employee_id,
@@ -334,7 +336,7 @@ const ClearanceRequest: React.FC = () => {
     // --- Fetch Clearance Requests ---
     const fetchRequests = async () => {
         try {
-            const response = await apiRequest("/clearances", "GET");
+            const response = await apiRequest("/clearances", "GET") as any;
             const responseData = response.data.data;
             // Only show requests without assigner
             const filteredData = Array.isArray(responseData)
@@ -361,20 +363,20 @@ const ClearanceRequest: React.FC = () => {
     };
 
     // --- Fetch Templates for Assignment ---
-    const fetchTemplatesForRequest = async (clearanceRequestId: number) => {
+    const fetchTemplatesForRequest = async (_clearanceRequestId: number) => {
         try {
             const res = await apiRequest<{ data: { success: boolean; data: TemplateData[] } }>(
                 `/templates`, "GET"
             );
             if (res.data.success) {
-                setTemplates(res.data.data);
+                // setTemplates(res.data.data);
                 setFilteredTemplates(res.data.data);
             } else {
-                setTemplates([]);
+                // setTemplates([]);
                 setFilteredTemplates([]);
             }
         } catch {
-            setTemplates([]);
+            // setTemplates([]);
             setFilteredTemplates([]);
         }
     };
@@ -415,14 +417,14 @@ const ClearanceRequest: React.FC = () => {
                 showSearch
                 showPagination
                 pageSize={10}
-                classes={{
-                    table: 'table-sm',
-                    header: 'py-2',
-                    row: 'align-middle'
-                }}
-                style={{
-                    cell: { padding: '0.4rem 0.6rem' }
-                }}
+                // classes={{
+                //     table: 'table-sm',
+                //     header: 'py-2',
+                //     row: 'align-middle'
+                // }}
+                // style={{
+                //     cell: { padding: '0.4rem 0.6rem' }
+                // }}
                 additionalFilters={
                     <div className="d-flex flex-column flex-sm-row align-items-start align-items-sm-center mt-2 mt-sm-0">
                         <label htmlFor="departmentFilter" className="me-2 mb-1 mb-sm-0 small text-muted">Department:</label>
@@ -626,7 +628,7 @@ const ClearanceRequest: React.FC = () => {
                             <h5 className="mb-3">Employee Details</h5>
                             <ClearanceRequestDetails
                                 id={selectedRequest.id}
-                                company={selectedRequest.company_id}
+                                companyId={selectedRequest.company_id}
                                 name={selectedRequest.name}
                                 email={selectedRequest.email}
                                 branch={selectedRequest.branch_id}
@@ -644,7 +646,7 @@ const ClearanceRequest: React.FC = () => {
                                             dataField: "template_id",
                                             text: "Actions",
                                             headerStyle: { width: '160px' },
-                                            formatter: (_cell: number, row: TemplateData) => (
+                                            formatter: (_cell: string | number | undefined, row: TemplateData) => (
                                                 <>
                                                     <Button
                                                         variant="primary"
@@ -672,14 +674,14 @@ const ClearanceRequest: React.FC = () => {
                                     hover
                                     responsive
                                     title="Available Templates"
-                                    classes={{
-                                        table: 'table-sm',
-                                        header: 'py-2',
-                                        row: 'align-middle'
-                                    }}
-                                    style={{
-                                        cell: { padding: '0.4rem 0.6rem' }
-                                    }}
+                                    // classes={{
+                                    //     table: 'table-sm',
+                                    //     header: 'py-2',
+                                    //     row: 'align-middle'
+                                    // }}
+                                    // style={{
+                                    //     cell: { padding: '0.4rem 0.6rem' }
+                                    // }}
                                 />
                             ) : (
                                 <p>No templates available.</p>

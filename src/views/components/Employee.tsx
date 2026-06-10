@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { Button, Form, Spinner, Modal } from "react-bootstrap";
-import { FaEye, FaEdit, FaPlusCircle } from "react-icons/fa";
+// import { FaEye, FaEdit, FaPlusCircle } from "react-icons/fa";
+import {FaPlusCircle } from "react-icons/fa";
 import { apiRequest } from "../../utils/ApiService";
 import { useCustomAlert } from "../../utils/CustomAlert";
 import DynamicTable, { ColumnDefinition } from "../../utils/DynamicTable";
@@ -38,6 +39,7 @@ const EmployeeTable = () => {
         middle_name: "",
         last_name: "",
         phone_number: "",
+        password: "",
         email: "",
         department_id: "",
         role_id: "",
@@ -55,6 +57,7 @@ const EmployeeTable = () => {
         can_create_clearance_requests: false,
         can_clear_clearances: false, // renamed from can_approve_clearances
         can_add_signatory: false,
+        can_access_all_clearances: false, 
     });
     const { showAlert, AlertComponent } = useCustomAlert();
 

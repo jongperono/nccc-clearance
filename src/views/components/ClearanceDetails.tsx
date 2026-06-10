@@ -33,8 +33,8 @@ const ClearanceDetails: React.FC<ClearanceDetailsProps> = ({
         setError(null);
 
         const fetchDetails = async () => {
-            try {
-                const clearanceRes = await apiRequest(`/clearance/${clearanceId}/details`, "GET");
+            try {const clearanceRes = await apiRequest(`/clearance/${clearanceId}/details`, "GET") as any;
+                
                 // Fix: handle nested data structure
                 const apiData = clearanceRes?.data?.data || clearanceRes?.data;
                 setClearance(apiData.clearance);
@@ -53,7 +53,7 @@ const ClearanceDetails: React.FC<ClearanceDetailsProps> = ({
         if (!showAddModal) return;
         const fetchSignatories = async () => {
             try {
-                const res = await apiRequest('/signatories', 'GET');
+                const res = await apiRequest('/signatories', 'GET') as any;
                 const apiData = res?.data?.data || res?.data;
                 setAvailableSignatories(Array.isArray(apiData) ? apiData : []);
             } catch (err: any) {
@@ -152,7 +152,7 @@ const ClearanceDetails: React.FC<ClearanceDetailsProps> = ({
                                     <Button variant="outline-secondary" onClick={async () => {
                                         // fetch signatories
                                         try {
-                                            const res = await apiRequest('/signatories', 'GET');
+                                            const res = await apiRequest('/signatories', 'GET') as any;
                                             const apiData = res?.data?.data || res?.data;
                                             setAvailableSignatories(Array.isArray(apiData) ? apiData : []);
                                         } catch (err: any) {
@@ -204,7 +204,7 @@ const ClearanceDetails: React.FC<ClearanceDetailsProps> = ({
                                             showAlert('success', 'Signatory added successfully');
                                             setShowAddModal(false);
                                             // refetch details
-                                            const res = await apiRequest(`/clearance/${clearanceId}/details`, 'GET');
+                                            const res = await apiRequest(`/clearance/${clearanceId}/details`, 'GET') as any;
                                             const apiData = res?.data?.data || res?.data;
                                             setClearance(apiData.clearance);
                                             setSignatories(apiData.signatories || []);
