@@ -46,7 +46,7 @@ function ClearanceTracking() {
         <div className="d-flex flex-row justify-content-center align-items-center mt-5">
             <div className="logIn_logo w-45 h-50 mx-auto mt-5">
                 <div className="d-flex flex-column align-items-center justify-content-center text-center">
-                    <img src="src/assets/nccc_logo.webp" alt="NCCC Logo" className="img-fluid" style={{ maxWidth: "300px" }} />
+                    <img src="src/assets/nccc_logo-DDQc94YV.webp" alt="NCCC Logo" className="img-fluid" style={{ maxWidth: "300px" }} />
                     <h2 className="fw-bold">TRACK YOUR CLEARANCE</h2>
                 </div>
             </div>

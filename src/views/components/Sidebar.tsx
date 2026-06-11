@@ -11,6 +11,7 @@ import {
 import "./Sidebar.css";
 import { apiRequest } from "../../utils/ApiService";
 import { useCustomAlert } from "../../utils/CustomAlert";
+import ncccLogo from "../../assets/nccc_logo.webp";
 
 // Sidebar navigation component
 interface SidebarProps {
@@ -123,7 +124,7 @@ const Sidebar: React.FC<SidebarProps> = ({ onSelect }) => {
 
     // Check if user should see Master Files section
     // Only employee 1 can access Master Files menu
-    const shouldShowMasterFiles =  (
+    const shouldShowMasterFiles = (
         can_create_roles ||
         can_create_accounts ||
         can_create_companies ||
@@ -136,7 +137,7 @@ const Sidebar: React.FC<SidebarProps> = ({ onSelect }) => {
             {/* Render alert at the top */}
             {AlertComponent}
             <div className="sidebar-logo">
-                <img src="/src/assets/nccc_logo.webp" alt="Logo" className="logo-img" />
+                <img src={ncccLogo} alt="Logo" className="logo-img" />
                 <h6 className="sidebar-title">Online Clearance</h6>
             </div>
             <div className="sidebar-menu">
