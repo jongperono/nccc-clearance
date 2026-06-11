@@ -46,8 +46,9 @@ const ClearanceDetails: React.FC<ClearanceDetailsProps> = ({
         };
 
         const fetchDetails = async () => {
-            try {const clearanceRes = await apiRequest(`/clearance/${clearanceId}/details`, "GET") as any;
-                
+            try {
+                const clearanceRes = await apiRequest(`/clearance/${clearanceId}/details`, "GET") as any;
+
                 // Fix: handle nested data structure
                 const apiData = clearanceRes?.data?.data || clearanceRes?.data;
                 setClearance(apiData.clearance);
@@ -232,7 +233,7 @@ const ClearanceDetails: React.FC<ClearanceDetailsProps> = ({
                                     }}
                                     disabled={adding}
                                 >
-                                    {adding ? <><Spinner as="span" animation="border" size="sm"/> Adding...</> : 'Add Selected'}
+                                    {adding ? <><Spinner as="span" animation="border" size="sm" /> Adding...</> : 'Add Selected'}
                                 </Button>
                             </Modal.Footer>
                         </Modal>
