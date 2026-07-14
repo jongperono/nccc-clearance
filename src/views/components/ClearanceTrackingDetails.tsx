@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
-import ncccLogo from "../../assets/nccc_logo.webp";
+import ncccLogo from "../../assets/nccc_logo.png";
 import { FaPrint } from "react-icons/fa";
 import { apiRequest } from "../../utils/ApiService";
 

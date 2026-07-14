@@ -11,7 +11,7 @@ import {
 import "./Sidebar.css";
 import { apiRequest } from "../../utils/ApiService";
 import { useCustomAlert } from "../../utils/CustomAlert";
-import ncccLogo from "../../assets/nccc_logo.webp";
+import ncccLogo from "../../assets/nccc_logo.png";
 
 // Sidebar navigation component
 interface SidebarProps {

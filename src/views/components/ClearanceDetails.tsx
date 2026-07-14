@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 import { Modal, Spinner, Button, Form, ListGroup, InputGroup } from "react-bootstrap";
 import { useCustomAlert } from "../../utils/CustomAlert";
 import DynamicTable from "../../utils/DynamicTable";
-import ncccLogo from "../../assets/nccc_logo.webp";
+import ncccLogo from "../../assets/nccc_logo.png";
 import { apiRequest } from "../../utils/ApiService";
 
 interface ClearanceDetailsProps {

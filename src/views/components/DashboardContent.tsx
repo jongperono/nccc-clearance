@@ -163,7 +163,7 @@ const Dashboard = () => {
         <div className="container-fluid p-2 p-md-4">
             {AlertComponent}
             <h2 className="mb-3 mb-md-4 text-primary border-bottom pb-2 fs-4 fs-md-2 d-flex justify-content-between align-items-center">
-                Dashboardss
+                Dashboard
                 <Button
                     variant="outline-secondary"
                     className={`ms-2 px-3 py-1 ${selectedStatus === "All" ? "bg-secondary text-light" : ''}`}
@@ -211,14 +211,14 @@ const Dashboard = () => {
                         responsive
                         title="Clearance List"
                         showSearch
-                        // classes={{
-                        //     table: 'table-sm',
-                        //     header: 'py-2',
-                        //     row: 'align-middle'
-                        // }}
-                        // style={{
-                        //     cell: { padding: '0.4rem 0.6rem' }
-                        // }}
+                    // classes={{
+                    //     table: 'table-sm',
+                    //     header: 'py-2',
+                    //     row: 'align-middle'
+                    // }}
+                    // style={{
+                    //     cell: { padding: '0.4rem 0.6rem' }
+                    // }}
                     />
                 )}
             </div>

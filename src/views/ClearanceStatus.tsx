@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { Link } from "react-router-dom";
 import DynamicTable, { ColumnDefinition } from "../utils/DynamicTable";
-import ncccLogo from "../assets/nccc_logo.webp";
+import ncccLogo from "../assets/nccc_logo.png";
 import { FaPrint } from "react-icons/fa";
 
 interface Clearance {

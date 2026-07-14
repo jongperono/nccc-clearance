@@ -4,7 +4,7 @@ import { Container, Button, Image } from 'react-bootstrap';
 import { useState } from 'react';
 import LoginModal from '../components/LoginModal';
 import bgImg from "../../assets/bg_img.webp";
-import ncccLogo from "../../assets/nccc_logo.webp";
+import ncccLogo from "../../assets/nccc_logo.png";
 
 export default function Main() {
     const navigate = useNavigate();

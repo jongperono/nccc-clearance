@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { Modal, Button, Spinner } from "react-bootstrap";
 import DynamicTable from "../../utils/DynamicTable";
-import ncccLogo from "../../assets/nccc_logo.webp";
+import ncccLogo from "../../assets/nccc_logo.png";
 import { apiRequest } from "../../utils/ApiService";
 
 // Modal for previewing template before creation
