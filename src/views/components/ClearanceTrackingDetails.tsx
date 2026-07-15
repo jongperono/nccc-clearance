@@ -126,6 +126,7 @@ const ClearanceTrackingDetails: React.FC = () => {
                         <thead className="table-light">
                             <tr>
                                 <th>Signatory</th>
+                                <th>Email</th>
                                 <th>Company</th>
                                 <th>Branch</th>
                                 <th>Department</th>
@@ -139,6 +140,11 @@ const ClearanceTrackingDetails: React.FC = () => {
                                     <td>
                                         {s.Employee
                                             ? [s.Employee.first_name, s.Employee.middle_name, s.Employee.last_name].filter(Boolean).join(" ")
+                                            : "-"}
+                                    </td>
+                                    <td>
+                                        {s.Employee?.email
+                                            ? <a href={`mailto:${s.Employee.email}`}>{s.Employee.email}</a>
                                             : "-"}
                                     </td>
                                     <td>{s.Employee?.company_id || "-"}</td>

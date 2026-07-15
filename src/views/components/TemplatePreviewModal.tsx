@@ -66,7 +66,7 @@ const TemplatePreviewModal: React.FC<TemplatePreviewModalProps> = ({
             };
 
             const response: any = await apiRequest("/template", "POST", templatePayload);
-
+            console.log("Template created successfully:", payloadSource);
             if (onSuccess) {
                 onSuccess(response.data);
             }
@@ -97,7 +97,7 @@ const TemplatePreviewModal: React.FC<TemplatePreviewModalProps> = ({
                 <div className="mb-4 p-3 border rounded shadow-sm bg-light">
                     <div className="row justify-content-center">
                         <div className="col-md-5 text-start">
-                            <p className="mb-0"><strong>Employee ID no:</strong> {dummyData.id}</p>
+                            <p className="mb-0"><strong>Employee ID no:</strong> {dummyData?.id}</p>
                             <p className="mb-0"><strong>Name:</strong> {dummyData.name}</p>
                             <p className="mb-0"><strong>Clearance Purpose:</strong> {templateData?.purpose || "N/A"}</p>
                         </div>
@@ -150,19 +150,19 @@ const TemplatePreviewModal: React.FC<TemplatePreviewModalProps> = ({
                     Cancel
                 </Button>
                 {showConfirmButton && (
-                    <Button 
-                        variant="success" 
-                        onClick={handleConfirm} 
+                    <Button
+                        variant="success"
+                        onClick={handleConfirm}
                         disabled={isSubmitting}
                     >
                         {isSubmitting ? (
                             <>
-                                <Spinner 
-                                    as="span" 
-                                    animation="border" 
-                                    size="sm" 
-                                    role="status" 
-                                    aria-hidden="true" 
+                                <Spinner
+                                    as="span"
+                                    animation="border"
+                                    size="sm"
+                                    role="status"
+                                    aria-hidden="true"
                                     className="me-2"
                                 />
                                 Creating...
