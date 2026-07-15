@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Modal, Button, Spinner } from "react-bootstrap";
 import DynamicTable from "../../utils/DynamicTable";
 import ncccLogo from "../../assets/nccc_logo.png";
@@ -15,6 +15,7 @@ interface TemplateData {
     title: string;
     purpose: string;
     footer_message?: string;
+    creator_employee_id?: number | string;
 }
 
 interface TemplatePreviewModalProps {
@@ -39,15 +40,49 @@ const TemplatePreviewModal: React.FC<TemplatePreviewModalProps> = ({
 }) => {
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [error, setError] = useState<string | null>(null);
+    const [creator, setCreator] = useState<{
+        id: string;
+        name: string;
+        company: string;
+        branch: string;
+        department: string;
+        datePrepared: string;
+    }>({
+        id: "-",
+        name: "-",
+        company: "-",
+        branch: "-",
+        department: "-",
+        datePrepared: new Date().toLocaleDateString(),
+    });
 
-    const dummyData = {
-        id: "00001",
-        name: "Example Name",
-        datePrepeared: new Date().toLocaleDateString(),
-        company: "NCCC Dummy Company",
-        branch: "Main Branch",
-        department: "IT Department"
-    };
+    // Fetch the creator employee's details for the clearance header.
+    // Prefer templateData.creator_employee_id (set when viewing an existing template);
+    // fall back to the logged-in user's id (used when creating a new template).
+    useEffect(() => {
+        const employeeId =
+            templateData?.creator_employee_id != null
+                ? String(templateData.creator_employee_id)
+                : localStorage.getItem('employee_id');
+        if (!employeeId) return;
+        apiRequest<any>(`/employee/${employeeId}`, 'GET')
+            .then((res) => {
+                const emp = res?.data?.data ?? res?.data ?? res;
+                if (emp) {
+                    setCreator({
+                        id: String(emp.employee_id ?? employeeId),
+                        name: emp.full_name
+                            || [emp.first_name, emp.middle_name, emp.last_name].filter(Boolean).join(' ')
+                            || '-',
+                        company: emp.company_id ?? '-',
+                        branch: emp.branch_id ?? '-',
+                        department: emp.department_id ?? '-',
+                        datePrepared: new Date().toLocaleDateString(),
+                    });
+                }
+            })
+            .catch(() => { /* keep defaults on error */ });
+    }, [templateData?.creator_employee_id]);
 
     // Confirm template creation
     const handleConfirm = async () => {
@@ -97,18 +132,18 @@ const TemplatePreviewModal: React.FC<TemplatePreviewModalProps> = ({
                 <div className="mb-4 p-3 border rounded shadow-sm bg-light">
                     <div className="row justify-content-center">
                         <div className="col-md-5 text-start">
-                            <p className="mb-0"><strong>Employee ID no:</strong> {dummyData?.id}</p>
-                            <p className="mb-0"><strong>Name:</strong> {dummyData.name}</p>
+                            <p className="mb-0"><strong>Employee ID no:</strong> {creator.id}</p>
+                            <p className="mb-0"><strong>Name:</strong> {creator.name}</p>
                             <p className="mb-0"><strong>Clearance Purpose:</strong> {templateData?.purpose || "N/A"}</p>
                         </div>
                         <div className="col-md-5 text-start">
-                            <p className="mb-0"><strong>Company:</strong> {dummyData.company}</p>
-                            <p className="mb-0"><strong>Branch:</strong> {dummyData.branch}</p>
-                            <p className="mb-0"><strong>Department:</strong> {dummyData.department}</p>
+                            <p className="mb-0"><strong>Company:</strong> {creator.company}</p>
+                            <p className="mb-0"><strong>Branch:</strong> {creator.branch}</p>
+                            <p className="mb-0"><strong>Department:</strong> {creator.department}</p>
                         </div>
                     </div>
                     <div className="text-center mt-3">
-                        <p className="mb-0"><strong>Date prepared:</strong> {dummyData.datePrepeared}</p>
+                        <p className="mb-0"><strong>Date prepared:</strong> {creator.datePrepared}</p>
                     </div>
                     {templateData?.footer_message && (
                         <div className="text-center mt-3">

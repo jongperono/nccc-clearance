@@ -46,7 +46,8 @@ const Template: React.FC = () => {
     const [templatePreviewData, setTemplatePreviewData] = useState({
         title: "",
         purpose: "",
-        footer_message: ""
+        footer_message: "",
+        creator_employee_id: undefined as number | undefined
     });
     const [selectedSignatories, setSelectedSignatories] = useState<any[]>([]);
     const { showAlert, AlertComponent } = useCustomAlert();
@@ -83,7 +84,8 @@ const Template: React.FC = () => {
         setTemplatePreviewData({
             title: template.title,
             purpose: template.purpose,
-            footer_message: template.footer_message ?? ""
+            footer_message: template.footer_message ?? "",
+            creator_employee_id: template.creator_employee_id
         });
         try {
             const signatoryResponse = await apiRequest(`/template/${template.template_id}/signatories`, "GET") as any;
