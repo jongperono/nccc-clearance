@@ -28,9 +28,6 @@ const Clearances = () => {
     const [selectedItem, setSelectedItem] = useState<ClearanceItem | null>(null);
     const [showModal, setShowModal] = useState(false);
     const [showDetailsModal, setShowDetailsModal] = useState(false);
-    const [currentPageMy, setCurrentPageMy] = useState(1);
-    const [currentPageOther, setCurrentPageOther] = useState(1);
-    const [itemsPerPage] = useState(10);
     const [myClearances, setMyClearances] = useState<ClearanceItem[]>([]);
     const [otherClearances, setOtherClearances] = useState<ClearanceItem[]>([]);
     const [loading, setLoading] = useState(true);
@@ -153,16 +150,7 @@ const Clearances = () => {
             .catch(() => setCanClearClearances(false));
     }, []);
 
-    // Pagination logic for both tables
-    const indexOfLastItemMy = currentPageMy * itemsPerPage;
-    const indexOfFirstItemMy = indexOfLastItemMy - itemsPerPage;
-    const currentItemsMy = myClearances.slice(indexOfFirstItemMy, indexOfLastItemMy);
-    const totalPagesMy = Math.ceil(myClearances.length / itemsPerPage);
 
-    const indexOfLastItemOther = currentPageOther * itemsPerPage;
-    const indexOfFirstItemOther = indexOfLastItemOther - itemsPerPage;
-    const currentItemsOther = otherClearances.slice(indexOfFirstItemOther, indexOfLastItemOther);
-    const totalPagesOther = Math.ceil(otherClearances.length / itemsPerPage);
 
     // Handle review click
     const handleReviewClick = async (item: ClearanceItem) => {
@@ -434,7 +422,7 @@ const Clearances = () => {
                 <h5 className="mb-2">Clearances</h5>
                 <div className="card shadow-sm mb-2">
                     <DynamicTable<ClearanceItem>
-                        data={currentItemsMy}
+                        data={myClearances}
                         columns={columns}
                         keyField="id"
                         striped
@@ -442,43 +430,8 @@ const Clearances = () => {
                         responsive
                         title="My Clearance List"
                         showSearch
-                    // classes={{
-                    //     table: 'table-sm',
-                    //     header: 'py-2',
-                    //     row: 'align-middle'
-                    // }}
-                    // style={{
-                    //     cell: { padding: '0.4rem 0.6rem' }
-                    // }}
+                        showPagination
                     />
-                </div>
-                {/* PAGINATION for My Clearances */}
-                <div className="d-flex justify-content-between align-items-center mt-2">
-                    <div>
-                        Showing {indexOfFirstItemMy + 1} to {Math.min(indexOfLastItemMy, myClearances.length)} of {myClearances.length} entries
-                    </div>
-                    <div>
-                        <Button
-                            variant="outline-secondary"
-                            size="sm"
-                            disabled={currentPageMy === 1}
-                            onClick={() => setCurrentPageMy(currentPageMy - 1)}
-                            className="me-2"
-                        >
-                            Previous
-                        </Button>
-                        <span className="mx-2">
-                            Page {currentPageMy} of {totalPagesMy}
-                        </span>
-                        <Button
-                            variant="outline-secondary"
-                            size="sm"
-                            disabled={currentPageMy >= totalPagesMy}
-                            onClick={() => setCurrentPageMy(currentPageMy + 1)}
-                        >
-                            Next
-                        </Button>
-                    </div>
                 </div>
             </div>
 
@@ -488,7 +441,7 @@ const Clearances = () => {
                     <h5 className="mb-2">Other Clearances</h5>
                     <div className="card shadow-sm mb-2">
                         <DynamicTable<ClearanceItem>
-                            data={currentItemsOther}
+                            data={otherClearances}
                             columns={otherClearancesColumns}
                             keyField="id"
                             striped
@@ -496,43 +449,8 @@ const Clearances = () => {
                             responsive
                             title="Other Clearance List"
                             showSearch
-                        // classes={{
-                        //     table: 'table-sm',
-                        //     header: 'py-2',
-                        //     row: 'align-middle'
-                        // }}
-                        // style={{
-                        //     cell: { padding: '0.4rem 0.6rem' }
-                        // }}
+                            showPagination
                         />
-                    </div>
-                    {/* PAGINATION for Other Clearances */}
-                    <div className="d-flex justify-content-between align-items-center mt-2">
-                        <div>
-                            Showing {indexOfFirstItemOther + 1} to {Math.min(indexOfLastItemOther, otherClearances.length)} of {otherClearances.length} entries
-                        </div>
-                        <div>
-                            <Button
-                                variant="outline-secondary"
-                                size="sm"
-                                disabled={currentPageOther === 1}
-                                onClick={() => setCurrentPageOther(currentPageOther - 1)}
-                                className="me-2"
-                            >
-                                Previous
-                            </Button>
-                            <span className="mx-2">
-                                Page {currentPageOther} of {totalPagesOther}
-                            </span>
-                            <Button
-                                variant="outline-secondary"
-                                size="sm"
-                                disabled={currentPageOther >= totalPagesOther}
-                                onClick={() => setCurrentPageOther(currentPageOther + 1)}
-                            >
-                                Next
-                            </Button>
-                        </div>
                     </div>
                 </div>
             )}
