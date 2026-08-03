@@ -1,6 +1,9 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { Image } from 'react-bootstrap';
 import { apiRequest } from '../../utils/ApiService';
+import bgImg from "../../assets/bg_img.webp";
+import ncccLogo from "../../assets/nccc_logo.png";
 
 // Clearance tracking page for tracking clearance
 function ClearanceTracking() {
@@ -44,9 +47,17 @@ function ClearanceTracking() {
 
     return (
         <div className="d-flex flex-row justify-content-center align-items-center mt-5">
+            <div className="bg-img" style={{ backgroundImage: `url(${bgImg})` }}></div>
             <div className="logIn_logo w-45 h-50 mx-auto mt-5">
                 <div className="d-flex flex-column align-items-center justify-content-center text-center">
-                    <img src="src/assets/nccc_logo.png" alt="NCCC Logo" className="img-fluid" style={{ maxWidth: "300px" }} />
+                    {/* <img src="src/assets/nccc_logo.png" alt="NCCC Logo" className="img-fluid" style={{ maxWidth: "300px" }} /> */}
+                    <Image
+                        src={ncccLogo}
+                        alt="NCCC Logo"
+                        className="img-fluid mb-4"
+                        style={{ maxWidth: "300px" }}
+                        rounded
+                    />
                     <h2 className="fw-bold">TRACK YOUR CLEARANCE</h2>
                 </div>
             </div>
