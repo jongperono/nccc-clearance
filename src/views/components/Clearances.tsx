@@ -9,16 +9,18 @@ import { useCustomAlert } from "../../utils/CustomAlert";
 // Clearance item interface for table
 interface ClearanceItem {
     id: number;
-    tracking_id?: string; // <-- add tracking_id
+    tracking_id?: string;
     name: string;
     company: string;
     department: string;
     branch: string;
-    purpose: string; // changed from type to purpose
+    purpose: string;
+    position: string;
+    effectivity_date: string;
     date: string;
     status: string;
     assigner?: string | null;
-    is_approved_by_me?: boolean; // <-- add this
+    is_approved_by_me?: boolean;
     [key: string]: unknown;
 }
 
@@ -37,11 +39,11 @@ const Clearances = () => {
     const { showAlert, AlertComponent } = useCustomAlert(); // <-- use custom alert
     const [showConfirmClear, setShowConfirmClear] = useState(false);
     const [clearTarget, setClearTarget] = useState<ClearanceItem | null>(null);
-    
+
     useEffect(() => {
         const fetchClearances = async () => {
             setLoading(true);
-            
+
             try {
                 const response = await apiRequest("/my-clearances", "GET") as any;
                 const responseData = response?.data;
@@ -61,10 +63,14 @@ const Clearances = () => {
                                 clearance.middle_name ?? "",
                                 clearance.last_name ?? ""
                             ].filter(Boolean).join(" ") || "N/A",
-                            company: clearance.Company?.name ?? clearance.company_id ?? "N/A",
-                            department: clearance.Department?.name ?? clearance.department_id ?? "N/A",
-                            branch: clearance.Branch?.name ?? clearance.branch_id ?? "N/A",
-                            purpose: clearance.purpose ?? clearance.purpose ?? "N/A",
+                            company: clearance.Company?.company_name ?? clearance.Company?.name ?? clearance.company_id ?? "N/A",
+                            department: clearance.Department?.department_name ?? clearance.Department?.name ?? clearance.department_id ?? "N/A",
+                            branch: clearance.Branch?.branch_name ?? clearance.Branch?.name ?? clearance.branch_id ?? "N/A",
+                            purpose: clearance.purpose ?? "N/A",
+                            position: clearance.position ?? "N/A",
+                            effectivity_date: clearance.effectivity_date
+                                ? new Date(clearance.effectivity_date).toLocaleDateString()
+                                : "N/A",
                             date: clearance.createdAt
                                 ? new Date(clearance.createdAt).toLocaleDateString()
                                 : clearance.created_at
@@ -97,10 +103,14 @@ const Clearances = () => {
                                 clearance.middle_name ?? "",
                                 clearance.last_name ?? ""
                             ].filter(Boolean).join(" ") || "N/A",
-                            company: clearance.Company?.name ?? clearance.company_id ?? "N/A",
-                            department: clearance.Department?.name ?? clearance.department_id ?? "N/A",
-                            branch: clearance.Branch?.name ?? clearance.branch_id ?? "N/A",
-                            purpose: clearance.purpose ?? clearance.purpose ?? "N/A",
+                            company: clearance.Company?.company_name ?? clearance.Company?.name ?? clearance.company_id ?? "N/A",
+                            department: clearance.Department?.department_name ?? clearance.Department?.name ?? clearance.department_id ?? "N/A",
+                            branch: clearance.Branch?.branch_name ?? clearance.Branch?.name ?? clearance.branch_id ?? "N/A",
+                            purpose: clearance.purpose ?? "N/A",
+                            position: clearance.position ?? "N/A",
+                            effectivity_date: clearance.effectivity_date
+                                ? new Date(clearance.effectivity_date).toLocaleDateString()
+                                : "N/A",
                             date: clearance.createdAt
                                 ? new Date(clearance.createdAt).toLocaleDateString()
                                 : clearance.created_at
@@ -160,13 +170,13 @@ const Clearances = () => {
             console.log('Remarkss')
             console.log(item.id)
             const remarks = await apiRequest(`/remarks-from-clearance/${item.id}`, "GET");
-            console.log(remarks,'---------------adasd')
+            console.log(remarks, '---------------adasd')
             setSelectedItem(item);
             setShowModal(true);
         } catch (error: any) {
             showAlert("error", "Failed to fetch remarks clearance: " + (error?.message || "Unknown error"));
         }
-        
+
     };
 
     // Handle view details
@@ -242,14 +252,13 @@ const Clearances = () => {
         { dataField: "company", text: "Company", sortable: true },
         { dataField: "department", text: "Department", sortable: true },
         { dataField: "branch", text: "Branch", sortable: true },
-        { dataField: "purpose", text: "Purpose", sortable: true },
-        { dataField: "date", text: "Date", sortable: true },
+        { dataField: "position", text: "Position", sortable: true },
+        { dataField: "effectivity_date", text: "Effectivity Date", sortable: true },
         {
             dataField: "status",
             text: "Status",
             sortable: true,
             formatter: (cell) => {
-                // Normalize to lowercase for comparison
                 const status = (cell || "").toString().toLowerCase();
                 let badgeClass = "bg-secondary";
                 if (status === "pending") badgeClass = "bg-primary";
@@ -433,14 +442,14 @@ const Clearances = () => {
                         responsive
                         title="My Clearance List"
                         showSearch
-                        // classes={{
-                        //     table: 'table-sm',
-                        //     header: 'py-2',
-                        //     row: 'align-middle'
-                        // }}
-                        // style={{
-                        //     cell: { padding: '0.4rem 0.6rem' }
-                        // }}
+                    // classes={{
+                    //     table: 'table-sm',
+                    //     header: 'py-2',
+                    //     row: 'align-middle'
+                    // }}
+                    // style={{
+                    //     cell: { padding: '0.4rem 0.6rem' }
+                    // }}
                     />
                 </div>
                 {/* PAGINATION for My Clearances */}
@@ -487,14 +496,14 @@ const Clearances = () => {
                             responsive
                             title="Other Clearance List"
                             showSearch
-                            // classes={{
-                            //     table: 'table-sm',
-                            //     header: 'py-2',
-                            //     row: 'align-middle'
-                            // }}
-                            // style={{
-                            //     cell: { padding: '0.4rem 0.6rem' }
-                            // }}
+                        // classes={{
+                        //     table: 'table-sm',
+                        //     header: 'py-2',
+                        //     row: 'align-middle'
+                        // }}
+                        // style={{
+                        //     cell: { padding: '0.4rem 0.6rem' }
+                        // }}
                         />
                     </div>
                     {/* PAGINATION for Other Clearances */}
