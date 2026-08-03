@@ -193,6 +193,9 @@ const ClearanceDetails: React.FC<ClearanceDetailsProps> = ({
                                     <div className="col-md-6">
                                         <InfoField icon="🎯" label="Purpose" value={clearance.purpose || "N/A"} />
                                     </div>
+                                    <div className="col-md-6">
+                                        <InfoField icon="👔" label="Immediate Head" value={clearance.immediate_head || "N/A"} />
+                                    </div>
                                 </div>
                             </div>
 
