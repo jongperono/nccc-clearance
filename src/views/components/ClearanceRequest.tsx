@@ -20,6 +20,8 @@ interface ClearanceRequest {
     department: string;
     department_id: string;
     purpose: string;
+    id_number: string;
+    effectivity_date: string;
 }
 
 interface NewClearanceRequest {
@@ -102,13 +104,13 @@ const ClearanceRequest: React.FC = () => {
 
     // --- Table Columns ---
     const columns: ColumnDefinition<ClearanceRequest>[] = [
-        { dataField: "id", text: "ID", sortable: true },
+        { dataField: "id_number", text: "ID Number", sortable: true },
         { dataField: "name", text: "Name", sortable: true },
         { dataField: "email", text: "Email", sortable: true },
         { dataField: "company", text: "Company", sortable: true },
         { dataField: "department", text: "Department", sortable: true },
         { dataField: "branch", text: "Branch", sortable: true },
-        { dataField: "purpose", text: "Purpose", sortable: true },
+        { dataField: "effectivity_date", text: "Effectivity Date", sortable: true },
         {
             dataField: "id",
             text: "Action",
@@ -361,11 +363,12 @@ const ClearanceRequest: React.FC = () => {
             const transformedData = filteredData.map((r: any) => ({
                 ...r,
                 requestId: `${r.id}-${r.email}`,
-                name: `${r.first_name} ${r.last_name}`,
-                company: r.company_id || "N/A",
-                branch: r.branch_id || "N/A",
-                department: r.department_id || "N/A",
-                purpose: r.purpose || "N/A",
+                name: `${r.first_name}${r.middle_name ? ' ' + r.middle_name : ''} ${r.last_name}`,
+                company: r.Company?.company_name || r.company_id || "N/A",
+                branch: r.Branch?.branch_name || r.branch_id || "N/A",
+                department: r.Department?.department_name || r.department_id || "N/A",
+                id_number: r.id_number || "N/A",
+                effectivity_date: r.effectivity_date || "N/A",
             }));
             setRequests(transformedData);
         } catch {
