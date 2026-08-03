@@ -10,7 +10,7 @@ import TemplatePreviewModal from "./TemplatePreviewModal";
 // --- Interfaces ---
 interface ClearanceRequest {
     id: number;
-    requestId?: string; 
+    requestId?: string;
     company: string;
     company_id: string;
     name: string;
@@ -31,6 +31,10 @@ interface NewClearanceRequest {
     branch_id: string;
     department_id: string;
     purpose: string;
+    id_number: string;
+    effectivity_date: string;
+    immediate_head: string;
+    position: string;
 }
 
 interface TemplateData {
@@ -40,7 +44,7 @@ interface TemplateData {
     department_id: number;
     company_id: number;
     purpose: string;
-    footer_message?: string; 
+    footer_message?: string;
 }
 
 interface Company {
@@ -77,7 +81,11 @@ const ClearanceRequest: React.FC = () => {
         company_id: '',
         branch_id: '',
         department_id: '',
-        purpose: ''
+        purpose: '',
+        id_number: '',
+        effectivity_date: '',
+        immediate_head: '',
+        position: '',
     });
     const [showAssignModal, setShowAssignModal] = useState(false);
     const [selectedRequest, setSelectedRequest] = useState<ClearanceRequest | null>(null);
@@ -203,6 +211,7 @@ const ClearanceRequest: React.FC = () => {
         setValidated(true);
         if (validateForm()) {
             try {
+                console.log('Submitting data:', newRequest);
                 await apiRequest("/clearances", "POST", newRequest);
                 fetchRequests();
                 setNewRequest({
@@ -213,7 +222,11 @@ const ClearanceRequest: React.FC = () => {
                     company_id: '',
                     branch_id: '',
                     department_id: '',
-                    purpose: ''
+                    purpose: '',
+                    id_number: '',
+                    effectivity_date: '',
+                    immediate_head: '',
+                    position: '',
                 });
                 setShowModal(false);
                 setValidated(false);
@@ -319,7 +332,7 @@ const ClearanceRequest: React.FC = () => {
         try {
             const res = await apiRequest<{ data: { success: boolean; data: Branch[] } }>("/branches", "GET");
             if (res.data.success) setBranches(res.data.data);
-        } catch { 
+        } catch {
             showAlert("error", "Failed to fetch branches.");
         }
     };
@@ -451,161 +464,234 @@ const ClearanceRequest: React.FC = () => {
                 </Modal.Header>
                 <Modal.Body>
                     <Form noValidate validated={validated} onSubmit={handleSubmit}>
-                        <Row className="mb-3">
-                            <Col md={4}>
-                                <Form.Group controlId="firstName">
-                                    <Form.Label>First Name <span className="text-danger">*</span></Form.Label>
-                                    <Form.Control
-                                        type="text"
-                                        name="first_name"
-                                        value={newRequest.first_name}
-                                        onChange={handleInputChange}
-                                        isInvalid={!!errors.first_name}
-                                        required
-                                    />
-                                    <Form.Control.Feedback type="invalid">
-                                        {errors.first_name}
-                                    </Form.Control.Feedback>
-                                </Form.Group>
-                            </Col>
-                            <Col md={4}>
-                                <Form.Group controlId="middleName">
-                                    <Form.Label>Middle Name</Form.Label>
-                                    <Form.Control
-                                        type="text"
-                                        name="middle_name"
-                                        value={newRequest.middle_name}
-                                        onChange={handleInputChange}
-                                    />
-                                </Form.Group>
-                            </Col>
-                            <Col md={4}>
-                                <Form.Group controlId="lastName">
-                                    <Form.Label>Last Name <span className="text-danger">*</span></Form.Label>
-                                    <Form.Control
-                                        type="text"
-                                        name="last_name"
-                                        value={newRequest.last_name}
-                                        onChange={handleInputChange}
-                                        isInvalid={!!errors.last_name}
-                                        required
-                                    />
-                                    <Form.Control.Feedback type="invalid">
-                                        {errors.last_name}
-                                    </Form.Control.Feedback>
-                                </Form.Group>
-                            </Col>
-                        </Row>
-                        <Row className="mb-3">
-                            <Col md={12}>
-                                <Form.Group controlId="email">
-                                    <Form.Label>Email <span className="text-danger">*</span></Form.Label>
-                                    <Form.Control
-                                        type="email"
-                                        name="email"
-                                        value={newRequest.email}
-                                        onChange={handleInputChange}
-                                        isInvalid={!!errors.email}
-                                        required
-                                    />
-                                    <Form.Control.Feedback type="invalid">
-                                        {errors.email}
-                                    </Form.Control.Feedback>
-                                </Form.Group>
-                            </Col>
-                        </Row>
-                        <Row className="mb-3">
-                            <Col md={12}>
-                                <Form.Group controlId="company">
-                                    <Form.Label>Company <span className="text-danger">*</span></Form.Label>
-                                    <Form.Select
-                                        name="company_id"
-                                        value={newRequest.company_id}
-                                        onChange={handleInputChange}
-                                        isInvalid={!!errors.company_id}
-                                        required
-                                    >
-                                        <option value="">Select Company</option>
-                                        {companies.map((company, idx) => (
-                                            <option key={`${company.company_id}-${idx}`} value={company.company_id}>
-                                                {company.company_name}
+                        {/* Section: Personal Information */}
+                        <div className="border rounded p-3 mb-3 bg-light">
+                            <h6 className="text-muted text-uppercase fw-semibold mb-3" style={{ fontSize: '0.75rem', letterSpacing: '0.05em' }}>
+                                Personal Information
+                            </h6>
+                            <Row className="mb-3">
+                                <Col md={4}>
+                                    <Form.Group controlId="firstName">
+                                        <Form.Label>First Name <span className="text-danger">*</span></Form.Label>
+                                        <Form.Control
+                                            type="text"
+                                            name="first_name"
+                                            value={newRequest.first_name}
+                                            onChange={handleInputChange}
+                                            isInvalid={!!errors.first_name}
+                                            placeholder="e.g. Juan"
+                                            required
+                                        />
+                                        <Form.Control.Feedback type="invalid">
+                                            {errors.first_name}
+                                        </Form.Control.Feedback>
+                                    </Form.Group>
+                                </Col>
+                                <Col md={4}>
+                                    <Form.Group controlId="middleName">
+                                        <Form.Label>Middle Name</Form.Label>
+                                        <Form.Control
+                                            type="text"
+                                            name="middle_name"
+                                            value={newRequest.middle_name}
+                                            onChange={handleInputChange}
+                                            placeholder="e.g. Santos"
+                                        />
+                                    </Form.Group>
+                                </Col>
+                                <Col md={4}>
+                                    <Form.Group controlId="lastName">
+                                        <Form.Label>Last Name <span className="text-danger">*</span></Form.Label>
+                                        <Form.Control
+                                            type="text"
+                                            name="last_name"
+                                            value={newRequest.last_name}
+                                            onChange={handleInputChange}
+                                            isInvalid={!!errors.last_name}
+                                            placeholder="e.g. Dela Cruz"
+                                            required
+                                        />
+                                        <Form.Control.Feedback type="invalid">
+                                            {errors.last_name}
+                                        </Form.Control.Feedback>
+                                    </Form.Group>
+                                </Col>
+                            </Row>
+                            <Row className="mb-0">
+                                <Col md={6}>
+                                    <Form.Group controlId="idNumber">
+                                        <Form.Label>ID Number</Form.Label>
+                                        <Form.Control
+                                            type="text"
+                                            name="id_number"
+                                            value={newRequest.id_number}
+                                            onChange={handleInputChange}
+                                            placeholder="e.g. EMP-00123"
+                                        />
+                                    </Form.Group>
+                                </Col>
+                                <Col md={6}>
+                                    <Form.Group controlId="email">
+                                        <Form.Label>Email <span className="text-danger">*</span></Form.Label>
+                                        <Form.Control
+                                            type="email"
+                                            name="email"
+                                            value={newRequest.email}
+                                            onChange={handleInputChange}
+                                            isInvalid={!!errors.email}
+                                            placeholder="e.g. juan@example.com"
+                                            required
+                                        />
+                                        <Form.Control.Feedback type="invalid">
+                                            {errors.email}
+                                        </Form.Control.Feedback>
+                                    </Form.Group>
+                                </Col>
+                            </Row>
+                        </div>
+
+                        {/* Section: Employment Details */}
+                        <div className="border rounded p-3 mb-3 bg-light">
+                            <h6 className="text-muted text-uppercase fw-semibold mb-3" style={{ fontSize: '0.75rem', letterSpacing: '0.05em' }}>
+                                Employment Details
+                            </h6>
+                            <Row className="mb-3">
+                                <Col md={6}>
+                                    <Form.Group controlId="position">
+                                        <Form.Label>Position</Form.Label>
+                                        <Form.Control
+                                            type="text"
+                                            name="position"
+                                            value={newRequest.position}
+                                            onChange={handleInputChange}
+                                            placeholder="e.g. Sales Associate"
+                                        />
+                                    </Form.Group>
+                                </Col>
+                                <Col md={6}>
+                                    <Form.Group controlId="immediateHead">
+                                        <Form.Label>Immediate Head</Form.Label>
+                                        <Form.Control
+                                            type="text"
+                                            name="immediate_head"
+                                            value={newRequest.immediate_head}
+                                            onChange={handleInputChange}
+                                            placeholder="e.g. Maria Reyes"
+                                        />
+                                    </Form.Group>
+                                </Col>
+                            </Row>
+                            <Row className="mb-0">
+                                <Col md={12}>
+                                    <Form.Group controlId="company">
+                                        <Form.Label>Company <span className="text-danger">*</span></Form.Label>
+                                        <Form.Select
+                                            name="company_id"
+                                            value={newRequest.company_id}
+                                            onChange={handleInputChange}
+                                            isInvalid={!!errors.company_id}
+                                            required
+                                        >
+                                            <option value="">Select Company</option>
+                                            {companies.map((company, idx) => (
+                                                <option key={`${company.company_id}-${idx}`} value={company.company_id}>
+                                                    {company.company_name}
+                                                </option>
+                                            ))}
+                                        </Form.Select>
+                                        <Form.Control.Feedback type="invalid">
+                                            {errors.company_id}
+                                        </Form.Control.Feedback>
+                                    </Form.Group>
+                                </Col>
+                            </Row>
+                            <Row className="mt-3 mb-0">
+                                <Col md={6}>
+                                    <Form.Group controlId="branch">
+                                        <Form.Label>Branch <span className="text-danger">*</span></Form.Label>
+                                        <Form.Select
+                                            name="branch_id"
+                                            value={newRequest.branch_id}
+                                            onChange={handleInputChange}
+                                            isInvalid={!!errors.branch_id}
+                                            required
+                                        >
+                                            <option value="">Select Branch</option>
+                                            {branches.map((branch, idx) => (
+                                                <option key={`${branch.branch_id}-${idx}`} value={branch.branch_id}>
+                                                    {branch.branch_name}
+                                                </option>
+                                            ))}
+                                        </Form.Select>
+                                        <Form.Control.Feedback type="invalid">
+                                            {errors.branch_id}
+                                        </Form.Control.Feedback>
+                                    </Form.Group>
+                                </Col>
+                                <Col md={6}>
+                                    <Form.Group controlId="department">
+                                        <Form.Label>Department <span className="text-danger">*</span></Form.Label>
+                                        <Form.Select
+                                            name="department_id"
+                                            value={newRequest.department_id}
+                                            onChange={handleInputChange}
+                                            isInvalid={!!errors.department_id}
+                                            required
+                                            disabled={!newRequest.company_id}
+                                        >
+                                            <option value="">
+                                                {newRequest.company_id ? "Select Department" : "Select Company First"}
                                             </option>
-                                        ))}
-                                    </Form.Select>
-                                    <Form.Control.Feedback type="invalid">
-                                        {errors.company_id}
-                                    </Form.Control.Feedback>
-                                </Form.Group>
-                            </Col>
-                        </Row>
-                        <Row className="mb-3">
-                            <Col md={6}>
-                                <Form.Group controlId="branch">
-                                    <Form.Label>Branch <span className="text-danger">*</span></Form.Label>
-                                    <Form.Select
-                                        name="branch_id"
-                                        value={newRequest.branch_id}
-                                        onChange={handleInputChange}
-                                        isInvalid={!!errors.branch_id}
-                                        required
-                                    >
-                                        <option value="">Select Branch</option>
-                                        {branches.map((branch, idx) => (
-                                            <option key={`${branch.branch_id}-${idx}`} value={branch.branch_id}>
-                                                {branch.branch_name}
-                                            </option>
-                                        ))}
-                                    </Form.Select>
-                                    <Form.Control.Feedback type="invalid">
-                                        {errors.branch_id}
-                                    </Form.Control.Feedback>
-                                </Form.Group>
-                            </Col>
-                            <Col md={6}>
-                                <Form.Group controlId="department">
-                                    <Form.Label>Department <span className="text-danger">*</span></Form.Label>
-                                    <Form.Select
-                                        name="department_id"
-                                        value={newRequest.department_id}
-                                        onChange={handleInputChange}
-                                        isInvalid={!!errors.department_id}
-                                        required
-                                        disabled={!newRequest.company_id}
-                                    >
-                                        <option value="">
-                                            {newRequest.company_id ? "Select Department" : "Select Company First"}
-                                        </option>
-                                        {departments.map((dept, idx) => (
-                                            <option key={`${dept.department_id}-${idx}`} value={dept.department_id}>
-                                                {dept.department_name}
-                                            </option>
-                                        ))}
-                                    </Form.Select>
-                                    <Form.Control.Feedback type="invalid">
-                                        {errors.department_id}
-                                    </Form.Control.Feedback>
-                                </Form.Group>
-                            </Col>
-                        </Row>
-                        <Row className="mb-3">
-                            <Col md={12}>
-                                <Form.Group controlId="purpose">
-                                    <Form.Label>Purpose of Clearance Request <span className="text-danger">*</span></Form.Label>
-                                    <Form.Control
-                                        type="text"
-                                        name="purpose"
-                                        value={newRequest.purpose}
-                                        onChange={handleInputChange}
-                                        placeholder="e.g., Resignation, Transfer, etc."
-                                        isInvalid={!!errors.purpose}
-                                        required
-                                    />
-                                    <Form.Control.Feedback type="invalid">
-                                        {errors.purpose}
-                                    </Form.Control.Feedback>
-                                </Form.Group>
-                            </Col>
-                        </Row>
+                                            {departments.map((dept, idx) => (
+                                                <option key={`${dept.department_id}-${idx}`} value={dept.department_id}>
+                                                    {dept.department_name}
+                                                </option>
+                                            ))}
+                                        </Form.Select>
+                                        <Form.Control.Feedback type="invalid">
+                                            {errors.department_id}
+                                        </Form.Control.Feedback>
+                                    </Form.Group>
+                                </Col>
+                            </Row>
+                        </div>
+
+                        {/* Section: Clearance Details */}
+                        <div className="border rounded p-3 mb-3 bg-light">
+                            <h6 className="text-muted text-uppercase fw-semibold mb-3" style={{ fontSize: '0.75rem', letterSpacing: '0.05em' }}>
+                                Clearance Details
+                            </h6>
+                            <Row className="mb-0">
+                                <Col md={8}>
+                                    <Form.Group controlId="purpose">
+                                        <Form.Label>Purpose of Clearance <span className="text-danger">*</span></Form.Label>
+                                        <Form.Control
+                                            type="text"
+                                            name="purpose"
+                                            value={newRequest.purpose}
+                                            onChange={handleInputChange}
+                                            placeholder="e.g. Resignation, Transfer, etc."
+                                            isInvalid={!!errors.purpose}
+                                            required
+                                        />
+                                        <Form.Control.Feedback type="invalid">
+                                            {errors.purpose}
+                                        </Form.Control.Feedback>
+                                    </Form.Group>
+                                </Col>
+                                <Col md={4}>
+                                    <Form.Group controlId="effectivityDate">
+                                        <Form.Label>Effectivity Date</Form.Label>
+                                        <Form.Control
+                                            type="date"
+                                            name="effectivity_date"
+                                            value={newRequest.effectivity_date}
+                                            onChange={handleInputChange}
+                                        />
+                                    </Form.Group>
+                                </Col>
+                            </Row>
+                        </div>
                         <Modal.Footer>
                             <Button variant="secondary" onClick={() => setShowModal(false)}>
                                 Cancel
@@ -674,14 +760,14 @@ const ClearanceRequest: React.FC = () => {
                                     hover
                                     responsive
                                     title="Available Templates"
-                                    // classes={{
-                                    //     table: 'table-sm',
-                                    //     header: 'py-2',
-                                    //     row: 'align-middle'
-                                    // }}
-                                    // style={{
-                                    //     cell: { padding: '0.4rem 0.6rem' }
-                                    // }}
+                                // classes={{
+                                //     table: 'table-sm',
+                                //     header: 'py-2',
+                                //     row: 'align-middle'
+                                // }}
+                                // style={{
+                                //     cell: { padding: '0.4rem 0.6rem' }
+                                // }}
                                 />
                             ) : (
                                 <p>No templates available.</p>
