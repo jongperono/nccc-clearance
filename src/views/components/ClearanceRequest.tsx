@@ -22,6 +22,8 @@ interface ClearanceRequest {
     purpose: string;
     id_number: string;
     effectivity_date: string;
+    position: string;
+    immediate_head: string;
 }
 
 interface NewClearanceRequest {
@@ -369,6 +371,8 @@ const ClearanceRequest: React.FC = () => {
                 department: r.Department?.department_name || r.department_id || "N/A",
                 id_number: r.id_number || "N/A",
                 effectivity_date: r.effectivity_date || "N/A",
+                position: r.position || "N/A",
+                immediate_head: r.immediate_head || "N/A",
             }));
             setRequests(transformedData);
         } catch {
@@ -708,78 +712,112 @@ const ClearanceRequest: React.FC = () => {
             </Modal>
             {/* Assign Template Modal */}
             <Modal show={showAssignModal} onHide={() => setShowAssignModal(false)} size="lg">
-                <Modal.Header closeButton className="py-2">
-                    <Modal.Title className="fs-5">Assign Clearance Template</Modal.Title>
+                <Modal.Header closeButton style={{ background: "linear-gradient(135deg, #1e3a5f 0%, #2563eb 100%)", borderBottom: "none" }}>
+                    <Modal.Title style={{ color: "#fff", fontWeight: 700, fontSize: "17px", display: "flex", alignItems: "center", gap: "8px" }}>
+                        <span>📋</span> Assign Clearance Template
+                    </Modal.Title>
                 </Modal.Header>
-                <Modal.Body className="p-3">
+                <Modal.Body style={{ background: "#f1f5f9", padding: "20px" }}>
                     {selectedRequest && (
                         <div>
-                            <h5 className="mb-3">Employee Details</h5>
-                            <ClearanceRequestDetails
-                                id={selectedRequest.id}
-                                companyId={selectedRequest.company_id}
-                                name={selectedRequest.name}
-                                email={selectedRequest.email}
-                                branch={selectedRequest.branch_id}
-                                department={selectedRequest.department_id}
-                                purpose={selectedRequest.purpose}
-                            />
-                            <hr />
-                            {filteredTemplates.length > 0 ? (
-                                <DynamicTable<TemplateData>
-                                    data={filteredTemplates}
-                                    columns={[
-                                        { dataField: "title", text: "Title", sortable: true },
-                                        { dataField: "purpose", text: "Purpose", sortable: true },
-                                        {
-                                            dataField: "template_id",
-                                            text: "Actions",
-                                            headerStyle: { width: '160px' },
-                                            formatter: (_cell: string | number | undefined, row: TemplateData) => (
-                                                <>
-                                                    <Button
-                                                        variant="primary"
-                                                        size="sm"
-                                                        onClick={() => handleViewTemplate(row)}
-                                                        className="ms-2"
-                                                    >
-                                                        View
-                                                    </Button>
-                                                    <Button
-                                                        variant="success"
-                                                        size="sm"
-                                                        onClick={() => handleAssignTemplate(row)}
-                                                        disabled={assigning}
-                                                        className="ms-2"
-                                                    >
-                                                        {assigning ? <Spinner animation="border" size="sm" /> : "Assign"}
-                                                    </Button>
-                                                </>
-                                            )
-                                        }
-                                    ]}
-                                    keyField="template_id"
-                                    striped
-                                    hover
-                                    responsive
-                                    title="Available Templates"
-                                // classes={{
-                                //     table: 'table-sm',
-                                //     header: 'py-2',
-                                //     row: 'align-middle'
-                                // }}
-                                // style={{
-                                //     cell: { padding: '0.4rem 0.6rem' }
-                                // }}
+                            {/* Employee Details Card */}
+                            <div style={{ marginBottom: "4px" }}>
+                                <div style={{ display: "flex", alignItems: "center", gap: "6px", marginBottom: "10px" }}>
+                                    <span style={{ fontSize: "15px" }}>👤</span>
+                                    <span style={{ fontWeight: 700, fontSize: "13px", color: "#475569", textTransform: "uppercase", letterSpacing: "0.05em" }}>Employee Details</span>
+                                </div>
+                                <ClearanceRequestDetails
+                                    idNumber={selectedRequest.id_number || "N/A"}
+                                    companyId={selectedRequest.company_id}
+                                    name={selectedRequest.name}
+                                    email={selectedRequest.email}
+                                    branch={selectedRequest.branch}
+                                    department={selectedRequest.department}
+                                    company={selectedRequest.company}
+                                    purpose={selectedRequest.purpose}
+                                    position={selectedRequest.position}
+                                    immediateHead={selectedRequest.immediate_head}
+                                    effectivityDate={selectedRequest.effectivity_date}
                                 />
+                            </div>
+
+                            {/* Divider */}
+                            <div style={{ display: "flex", alignItems: "center", gap: "10px", margin: "18px 0 14px" }}>
+                                <div style={{ flex: 1, height: "1px", background: "#e2e8f0" }} />
+                                <span style={{ fontSize: "12px", fontWeight: 600, color: "#94a3b8", textTransform: "uppercase", letterSpacing: "0.06em" }}>Available Templates</span>
+                                <div style={{ flex: 1, height: "1px", background: "#e2e8f0" }} />
+                            </div>
+
+                            {/* Templates */}
+                            {filteredTemplates.length > 0 ? (
+                                <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+                                    {filteredTemplates.map((tmpl) => (
+                                        <div key={tmpl.template_id} style={{
+                                            background: "#fff",
+                                            border: "1px solid #e2e8f0",
+                                            borderRadius: "12px",
+                                            padding: "14px 16px",
+                                            display: "flex",
+                                            alignItems: "center",
+                                            gap: "14px",
+                                            boxShadow: "0 1px 3px rgba(0,0,0,0.06)",
+                                            flexWrap: "wrap",
+                                        }}>
+                                            {/* Icon */}
+                                            <div style={{
+                                                width: "40px", height: "40px", borderRadius: "10px",
+                                                background: "linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%)",
+                                                display: "flex", alignItems: "center", justifyContent: "center",
+                                                fontSize: "20px", flexShrink: 0,
+                                            }}>📄</div>
+
+                                            {/* Info */}
+                                            <div style={{ flex: 1, minWidth: "140px" }}>
+                                                <div style={{ fontWeight: 700, fontSize: "14px", color: "#1e293b" }}>{tmpl.title}</div>
+                                                <div style={{ fontSize: "12px", color: "#64748b", marginTop: "2px" }}>
+                                                    <span style={{
+                                                        background: "#f0fdf4", color: "#15803d",
+                                                        border: "1px solid #bbf7d0", borderRadius: "6px",
+                                                        padding: "1px 8px", fontSize: "11px", fontWeight: 600,
+                                                    }}>{tmpl.purpose}</span>
+                                                </div>
+                                            </div>
+
+                                            {/* Actions */}
+                                            <div style={{ display: "flex", gap: "8px", flexShrink: 0 }}>
+                                                <Button
+                                                    variant="outline-primary"
+                                                    size="sm"
+                                                    onClick={() => handleViewTemplate(tmpl)}
+                                                    style={{ borderRadius: "8px", fontWeight: 600, fontSize: "12px", padding: "5px 14px" }}
+                                                >
+                                                    👁 Preview
+                                                </Button>
+                                                <Button
+                                                    variant="success"
+                                                    size="sm"
+                                                    onClick={() => handleAssignTemplate(tmpl)}
+                                                    disabled={assigning}
+                                                    style={{ borderRadius: "8px", fontWeight: 600, fontSize: "12px", padding: "5px 14px" }}
+                                                >
+                                                    {assigning ? <Spinner animation="border" size="sm" /> : "✅ Assign"}
+                                                </Button>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
                             ) : (
-                                <p>No templates available.</p>
+                                <div style={{ textAlign: "center", padding: "32px 16px", color: "#94a3b8", background: "#fff", borderRadius: "12px", border: "1px dashed #cbd5e1" }}>
+                                    <div style={{ fontSize: "32px", marginBottom: "8px" }}>📭</div>
+                                    <div style={{ fontSize: "14px", fontWeight: 500 }}>No templates available</div>
+                                    <div style={{ fontSize: "12px", marginTop: "4px" }}>Create a template first before assigning.</div>
+                                </div>
                             )}
                         </div>
                     )}
                 </Modal.Body>
-                <Modal.Footer>
-                    <Button variant="secondary" onClick={() => setShowAssignModal(false)}>
+                <Modal.Footer style={{ background: "#f8fafc", borderTop: "1px solid #e2e8f0" }}>
+                    <Button variant="outline-secondary" onClick={() => setShowAssignModal(false)} style={{ borderRadius: "8px" }}>
                         Close
                     </Button>
                 </Modal.Footer>
