@@ -25,6 +25,7 @@ const ClearanceDetails: React.FC<ClearanceDetailsProps> = ({
     const [searchTerm, setSearchTerm] = useState("");
     const [selectedSignatory, setSelectedSignatory] = useState<any | null>(null);
     const [canAddSignatory, setCanAddSignatory] = useState(false);
+    const [remarksMap, setRemarksMap] = useState<Record<number, string>>({});
     const { showAlert, AlertComponent } = useCustomAlert();
 
     useEffect(() => {
@@ -59,8 +60,25 @@ const ClearanceDetails: React.FC<ClearanceDetailsProps> = ({
             }
         };
 
+        const fetchRemarks = async () => {
+            try {
+                const res = await apiRequest(`/remarks-from-clearance/${clearanceId}`, "GET") as any;
+                const data: any[] = res?.data?.data || res?.data || [];
+                const map: Record<number, string> = {};
+                data.forEach((r: any) => {
+                    if (r.employee_id != null) {
+                        map[r.employee_id] = r.remark;
+                    }
+                });
+                setRemarksMap(map);
+            } catch {
+                // remarks are non-critical; silently ignore errors
+            }
+        };
+
         fetchPermissions();
         fetchDetails();
+        fetchRemarks();
     }, [show, clearanceId]);
 
     useEffect(() => {
@@ -389,7 +407,7 @@ const ClearanceDetails: React.FC<ClearanceDetailsProps> = ({
                                                                     || [emp.first_name, emp.middle_name, emp.last_name].filter(Boolean).join(" ")
                                                                     || "—";
                                                                 const role = emp.role_id || "—";
-                                                                const remarks = sig.remarks || "—";
+                                                                const remarks = remarksMap[emp.employee_id] || sig.remarks || "No remarks";
                                                                 const status = typeof sig.status !== "undefined"
                                                                     ? sig.status
                                                                     : (sig.is_approved === true ? "Approved" : "Pending");
@@ -442,7 +460,10 @@ const ClearanceDetails: React.FC<ClearanceDetailsProps> = ({
                                                                         {/* Remarks */}
                                                                         <div style={{ flex: 2, minWidth: "100px", fontSize: "12px", color: "#475569" }}>
                                                                             <div style={{ fontSize: "9px", fontWeight: 700, color: "#94a3b8", textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: "2px" }}>Remarks</div>
-                                                                            <div>{remarks}</div>
+                                                                            <div style={{
+                                                                                color: remarks === "No remarks" ? "#cbd5e1" : "#334155",
+                                                                                fontStyle: remarks === "No remarks" ? "italic" : "normal",
+                                                                            }}>{remarks}</div>
                                                                         </div>
 
                                                                         {/* Status badge */}
