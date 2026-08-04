@@ -205,6 +205,9 @@ const ClearanceDetails: React.FC<ClearanceDetailsProps> = ({
                                         <InfoField icon="👤" label="Full Name" value={fullName || "-"} />
                                     </div>
                                     <div className="col-md-6">
+                                        <InfoField icon="💼" label="Position" value={clearance.position || "N/A"} />
+                                    </div>
+                                    <div className="col-md-6">
                                         <InfoField icon="✉️" label="Email" value={clearance.email || "-"} />
                                     </div>
                                     <div className="col-md-6">
