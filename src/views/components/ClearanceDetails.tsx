@@ -1,7 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { Modal, Spinner, Button, Form, ListGroup, InputGroup } from "react-bootstrap";
 import { useCustomAlert } from "../../utils/CustomAlert";
-import DynamicTable from "../../utils/DynamicTable";
 import ncccLogo from "../../assets/nccc_logo.png";
 import { apiRequest } from "../../utils/ApiService";
 
@@ -315,33 +314,162 @@ const ClearanceDetails: React.FC<ClearanceDetailsProps> = ({
                                         </Button>
                                     )}
                                 </div>
-                                <DynamicTable
-                                    data={signatories.map(sig => ({
-                                        ...sig.Employee,
-                                        remarks: sig.remarks || "-",
-                                        status: typeof sig.status !== "undefined"
-                                            ? sig.status
-                                            : (sig.is_approved === true ? "Approved" : "Pending"),
-                                        company_id: sig.Employee?.company_id || "-",
-                                        branch_id: sig.Employee?.branch_id || "-",
-                                        department_id: sig.Employee?.department_id || "-",
-                                    }))}
-                                    title=""
-                                    columns={[
-                                        { dataField: "full_name", text: "Signatory", sortable: false },
-                                        { dataField: "company_id", text: "Company", sortable: false },
-                                        { dataField: "branch_id", text: "Branch", sortable: false },
-                                        { dataField: "department_id", text: "Department", sortable: false },
-                                        { dataField: "remarks", text: "Remarks", sortable: false },
-                                        { dataField: "status", text: "Status", sortable: false },
-                                    ]}
-                                    keyField="employee_id"
-                                    striped
-                                    bordered
-                                    responsive
-                                    showSearch={false}
-                                    showPagination={false}
-                                />
+
+                                {signatories.length === 0 ? (
+                                    <div style={{ textAlign: "center", padding: "32px 16px", color: "#94a3b8" }}>
+                                        <div style={{ fontSize: "32px", marginBottom: "8px" }}>📭</div>
+                                        <div style={{ fontSize: "14px" }}>No signatories assigned yet.</div>
+                                    </div>
+                                ) : (() => {
+                                    // Group signatories by department_id, sort dept names, then sort by role_id within each group
+                                    const grouped = signatories.reduce((acc: Record<string, any[]>, sig) => {
+                                        const deptKey = sig.Employee?.department_id || "—";
+                                        if (!acc[deptKey]) acc[deptKey] = [];
+                                        acc[deptKey].push(sig);
+                                        return acc;
+                                    }, {});
+
+                                    const sortedDepts = Object.keys(grouped).sort((a, b) => a.localeCompare(b));
+
+                                    const deptColors = [
+                                        { header: "#1e3a5f", light: "#e0f2fe", accent: "#0369a1" },
+                                        { header: "#064e3b", light: "#d1fae5", accent: "#047857" },
+                                        { header: "#4c1d95", light: "#ede9fe", accent: "#6d28d9" },
+                                        { header: "#7c2d12", light: "#ffedd5", accent: "#c2410c" },
+                                        { header: "#1e3a5f", light: "#fef9c3", accent: "#a16207" },
+                                        { header: "#1f2937", light: "#f1f5f9", accent: "#475569" },
+                                    ];
+
+                                    return (
+                                        <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+                                            {sortedDepts.map((deptKey, dIdx) => {
+                                                const deptSignatories = [...grouped[deptKey]].sort((a, b) => {
+                                                    const roleA = (a.Employee?.role_id || "").toLowerCase();
+                                                    const roleB = (b.Employee?.role_id || "").toLowerCase();
+                                                    return roleA.localeCompare(roleB);
+                                                });
+                                                const palette = deptColors[dIdx % deptColors.length];
+
+                                                return (
+                                                    <div key={deptKey} style={{
+                                                        border: `1px solid ${palette.light}`,
+                                                        borderRadius: "12px",
+                                                        overflow: "hidden",
+                                                    }}>
+                                                        {/* Department header */}
+                                                        <div style={{
+                                                            background: palette.header,
+                                                            padding: "10px 16px",
+                                                            display: "flex",
+                                                            alignItems: "center",
+                                                            gap: "8px",
+                                                        }}>
+                                                            <span style={{ fontSize: "14px" }}>🗂️</span>
+                                                            <span style={{ fontWeight: 700, fontSize: "13px", color: "#fff", letterSpacing: "0.04em", textTransform: "uppercase" }}>
+                                                                {deptKey}
+                                                            </span>
+                                                            <span style={{
+                                                                marginLeft: "auto",
+                                                                background: "rgba(255,255,255,0.2)",
+                                                                color: "#fff",
+                                                                borderRadius: "20px",
+                                                                padding: "1px 10px",
+                                                                fontSize: "11px",
+                                                                fontWeight: 600,
+                                                            }}>
+                                                                {deptSignatories.length} {deptSignatories.length === 1 ? "signatory" : "signatories"}
+                                                            </span>
+                                                        </div>
+
+                                                        {/* Signatory rows */}
+                                                        <div style={{ background: "#fff" }}>
+                                                            {deptSignatories.map((sig, sIdx) => {
+                                                                const emp = sig.Employee || {};
+                                                                const name = emp.full_name
+                                                                    || [emp.first_name, emp.middle_name, emp.last_name].filter(Boolean).join(" ")
+                                                                    || "—";
+                                                                const role = emp.role_id || "—";
+                                                                const remarks = sig.remarks || "—";
+                                                                const status = typeof sig.status !== "undefined"
+                                                                    ? sig.status
+                                                                    : (sig.is_approved === true ? "Approved" : "Pending");
+                                                                const sv = getStatusVariant(status);
+                                                                const isLast = sIdx === deptSignatories.length - 1;
+
+                                                                return (
+                                                                    <div key={emp.employee_id ?? sIdx} style={{
+                                                                        display: "flex",
+                                                                        alignItems: "center",
+                                                                        gap: "12px",
+                                                                        padding: "12px 16px",
+                                                                        borderBottom: isLast ? "none" : "1px solid #f1f5f9",
+                                                                        flexWrap: "wrap",
+                                                                    }}>
+                                                                        {/* Avatar */}
+                                                                        <div style={{
+                                                                            width: "36px",
+                                                                            height: "36px",
+                                                                            borderRadius: "50%",
+                                                                            background: palette.light,
+                                                                            color: palette.accent,
+                                                                            display: "flex",
+                                                                            alignItems: "center",
+                                                                            justifyContent: "center",
+                                                                            fontWeight: 700,
+                                                                            fontSize: "14px",
+                                                                            flexShrink: 0,
+                                                                        }}>
+                                                                            {name.charAt(0).toUpperCase()}
+                                                                        </div>
+
+                                                                        {/* Name + Role */}
+                                                                        <div style={{ flex: 1, minWidth: "120px" }}>
+                                                                            <div style={{ fontWeight: 600, fontSize: "14px", color: "#1e293b" }}>{name}</div>
+                                                                            <div style={{ fontSize: "11px", color: "#64748b", marginTop: "2px" }}>
+                                                                                <span style={{
+                                                                                    background: palette.light,
+                                                                                    color: palette.accent,
+                                                                                    borderRadius: "6px",
+                                                                                    padding: "1px 7px",
+                                                                                    fontWeight: 600,
+                                                                                    fontSize: "10px",
+                                                                                }}>
+                                                                                    {role}
+                                                                                </span>
+                                                                            </div>
+                                                                        </div>
+
+                                                                        {/* Remarks */}
+                                                                        <div style={{ flex: 2, minWidth: "100px", fontSize: "12px", color: "#475569" }}>
+                                                                            <div style={{ fontSize: "9px", fontWeight: 700, color: "#94a3b8", textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: "2px" }}>Remarks</div>
+                                                                            <div>{remarks}</div>
+                                                                        </div>
+
+                                                                        {/* Status badge */}
+                                                                        <div style={{
+                                                                            background: sv.bg,
+                                                                            color: sv.color,
+                                                                            border: `1px solid ${sv.border}`,
+                                                                            borderRadius: "20px",
+                                                                            padding: "3px 12px",
+                                                                            fontSize: "11px",
+                                                                            fontWeight: 700,
+                                                                            textTransform: "uppercase",
+                                                                            letterSpacing: "0.06em",
+                                                                            whiteSpace: "nowrap",
+                                                                        }}>
+                                                                            {status}
+                                                                        </div>
+                                                                    </div>
+                                                                );
+                                                            })}
+                                                        </div>
+                                                    </div>
+                                                );
+                                            })}
+                                        </div>
+                                    );
+                                })()}
                             </div>
 
                         </div>{/* end cards container */}
