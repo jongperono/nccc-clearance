@@ -10,10 +10,13 @@ import ClearanceDetails from "./ClearanceDetails";
 
 interface ClearanceItem {
     id: number;
+    tracking_id: string;
     name: string;
     company: string;
     department: string;
     branch: string;
+    position: string;
+    effectivity_date: string;
     purpose: string;
     date: string;
     status: string;
@@ -23,8 +26,6 @@ interface ClearanceItem {
 
 const Dashboard = () => {
     const [selectedStatus, setSelectedStatus] = useState("All");
-    const [currentPage, setCurrentPage] = useState(1);
-    const [itemsPerPage] = useState(10);
     const [clearances, setClearances] = useState<ClearanceItem[]>([]);
     const [loading, setLoading] = useState(true);
     const [showDetailsModal, setShowDetailsModal] = useState(false);
@@ -56,6 +57,7 @@ const Dashboard = () => {
                     const clearance = item.Clearance || item || {};
                     return {
                         id: clearance.id ?? item.clearance_id ?? item.id ?? 0,
+                        tracking_id: clearance.tracking_id ?? "N/A",
                         name: [
                             clearance.first_name ?? "",
                             clearance.middle_name ?? "",
@@ -64,6 +66,10 @@ const Dashboard = () => {
                         company: clearance.Company?.name ?? clearance.company_id ?? "N/A",
                         department: clearance.Department?.name ?? clearance.department_id ?? "N/A",
                         branch: clearance.Branch?.name ?? clearance.branch_id ?? "N/A",
+                        position: clearance.position ?? "N/A",
+                        effectivity_date: clearance.effectivity_date
+                            ? new Date(clearance.effectivity_date).toLocaleDateString()
+                            : "N/A",
                         purpose: clearance.purpose ?? clearance.type ?? "N/A",
                         date: clearance.createdAt
                             ? new Date(clearance.createdAt).toLocaleDateString()
@@ -105,24 +111,20 @@ const Dashboard = () => {
         { label: "Cleared", value: "cleared", color: "info", count: clearedCount },
     ];
 
-    // Filtered and paginated data
+    // Filtered data
     const filteredClearances = selectedStatus === "All"
         ? clearances
         : clearances.filter(item => item.status?.toLowerCase() === selectedStatus.toLowerCase());
 
-    const indexOfLastItem = currentPage * itemsPerPage;
-    const indexOfFirstItem = indexOfLastItem - itemsPerPage;
-    const currentItems = filteredClearances.slice(indexOfFirstItem, indexOfLastItem);
-    const totalPages = Math.ceil(filteredClearances.length / itemsPerPage);
-
     // Table columns (add actions column with View button)
     const columns: ColumnDefinition<ClearanceItem>[] = [
+        { dataField: "tracking_id", text: "Tracking ID", sortable: true },
         { dataField: "name", text: "Name", sortable: true },
         { dataField: "company", text: "Company", sortable: true },
         { dataField: "department", text: "Department", sortable: true },
         { dataField: "branch", text: "Branch", sortable: true },
-        { dataField: "purpose", text: "Purpose", sortable: true },
-        { dataField: "date", text: "Date", sortable: true },
+        { dataField: "position", text: "Position", sortable: true },
+        { dataField: "effectivity_date", text: "Effectivity Date", sortable: true },
         {
             dataField: "status",
             text: "Status",
@@ -169,7 +171,6 @@ const Dashboard = () => {
                     className={`ms-2 px-3 py-1 ${selectedStatus === "All" ? "bg-secondary text-light" : ''}`}
                     onClick={() => {
                         setSelectedStatus("All");
-                        setCurrentPage(1);
                     }}
                 >
                     All
@@ -185,7 +186,6 @@ const Dashboard = () => {
                             className={`w-100 py-2 py-md-3 transition h-100 ${selectedStatus.toLowerCase() === stat.value ? `bg-${stat.color} text-light` : ''}`}
                             onClick={() => {
                                 setSelectedStatus(stat.value);
-                                setCurrentPage(1);
                             }}
                         >
                             <h3 className="fw-bold mb-1 fs-5 fs-md-3">{stat.count}</h3>
@@ -203,7 +203,7 @@ const Dashboard = () => {
                     </div>
                 ) : (
                     <DynamicTable<ClearanceItem>
-                        data={currentItems}
+                        data={filteredClearances}
                         columns={columns}
                         keyField="id"
                         striped
@@ -211,44 +211,10 @@ const Dashboard = () => {
                         responsive
                         title="Clearance List"
                         showSearch
-                    // classes={{
-                    //     table: 'table-sm',
-                    //     header: 'py-2',
-                    //     row: 'align-middle'
-                    // }}
-                    // style={{
-                    //     cell: { padding: '0.4rem 0.6rem' }
-                    // }}
+                        showPagination
+                        pageSize={10}
                     />
                 )}
-            </div>
-            {/* PAGINATION */}
-            <div className="d-flex justify-content-between align-items-center mt-2">
-                <div>
-                    Showing {filteredClearances.length === 0 ? 0 : indexOfFirstItem + 1} to {Math.min(indexOfLastItem, filteredClearances.length)} of {filteredClearances.length} entries
-                </div>
-                <div>
-                    <Button
-                        variant="outline-secondary"
-                        size="sm"
-                        disabled={currentPage === 1}
-                        onClick={() => setCurrentPage(currentPage - 1)}
-                        className="me-2"
-                    >
-                        Previous
-                    </Button>
-                    <span className="mx-2">
-                        Page {currentPage} of {totalPages || 1}
-                    </span>
-                    <Button
-                        variant="outline-secondary"
-                        size="sm"
-                        disabled={currentPage >= totalPages}
-                        onClick={() => setCurrentPage(currentPage + 1)}
-                    >
-                        Next
-                    </Button>
-                </div>
             </div>
             <ClearanceDetails
                 show={showDetailsModal}
