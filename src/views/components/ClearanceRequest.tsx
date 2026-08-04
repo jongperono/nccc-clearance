@@ -49,6 +49,12 @@ interface TemplateData {
     company_id: number;
     purpose: string;
     footer_message?: string;
+    creator_employee?: {
+        first_name: string;
+        last_name: string;
+        email?: string;
+        role_id?: string;
+    };
 }
 
 interface Company {
@@ -390,7 +396,10 @@ const ClearanceRequest: React.FC = () => {
             );
             if (res.data.success) {
                 // setTemplates(res.data.data);
-                setFilteredTemplates(res.data.data);
+                const sorted = [...res.data.data].sort((a, b) =>
+                    a.title.localeCompare(b.title)
+                );
+                setFilteredTemplates(sorted);
             } else {
                 // setTemplates([]);
                 setFilteredTemplates([]);
@@ -774,12 +783,28 @@ const ClearanceRequest: React.FC = () => {
                                             {/* Info */}
                                             <div style={{ flex: 1, minWidth: "140px" }}>
                                                 <div style={{ fontWeight: 700, fontSize: "14px", color: "#1e293b" }}>{tmpl.title}</div>
-                                                <div style={{ fontSize: "12px", color: "#64748b", marginTop: "2px" }}>
+                                                <div style={{ fontSize: "12px", color: "#64748b", marginTop: "4px", display: "flex", flexWrap: "wrap", gap: "6px", alignItems: "center" }}>
                                                     <span style={{
                                                         background: "#f0fdf4", color: "#15803d",
                                                         border: "1px solid #bbf7d0", borderRadius: "6px",
                                                         padding: "1px 8px", fontSize: "11px", fontWeight: 600,
                                                     }}>{tmpl.purpose}</span>
+                                                    <span style={{
+                                                        background: "#eff6ff", color: "#1d4ed8",
+                                                        border: "1px solid #bfdbfe", borderRadius: "6px",
+                                                        padding: "1px 8px", fontSize: "11px", fontWeight: 600,
+                                                    }}>
+                                                        # {tmpl.template_id}
+                                                    </span>
+                                                    {tmpl.creator_employee && (
+                                                        <span style={{
+                                                            background: "#faf5ff", color: "#6d28d9",
+                                                            border: "1px solid #ddd6fe", borderRadius: "6px",
+                                                            padding: "1px 8px", fontSize: "11px", fontWeight: 600,
+                                                        }}>
+                                                            👤 {tmpl.creator_employee.first_name} {tmpl.creator_employee.last_name}
+                                                        </span>
+                                                    )}
                                                 </div>
                                             </div>
 
