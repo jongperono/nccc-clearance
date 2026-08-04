@@ -20,6 +20,7 @@ interface ClearanceItem {
     purpose: string;
     date: string;
     status: string;
+    display_status: string; // personal status for the logged-in user
     assigner?: string | null;
     is_approved_by_me?: boolean;
 }
@@ -55,6 +56,21 @@ const Dashboard = () => {
 
                 const mapped = dataArr.map((item: any) => {
                     const clearance = item.Clearance || item || {};
+                    const overallStatus = item.status ?? clearance.clearance_status ?? "Pending";
+                    const isApprovedByMe = item.is_approved_by_me === true;
+
+                    // Personal display status: if the logged-in user has already approved
+                    // this clearance, show "Approved" regardless of overall progress.
+                    // If overall is Cleared, always show Cleared.
+                    let displayStatus: string;
+                    if (overallStatus?.toLowerCase() === "cleared") {
+                        displayStatus = "Cleared";
+                    } else if (isApprovedByMe) {
+                        displayStatus = "Approved";
+                    } else {
+                        displayStatus = overallStatus;
+                    }
+
                     return {
                         id: clearance.id ?? item.clearance_id ?? item.id ?? 0,
                         tracking_id: clearance.tracking_id ?? "N/A",
@@ -76,14 +92,15 @@ const Dashboard = () => {
                             : clearance.created_at
                                 ? new Date(clearance.created_at).toLocaleDateString()
                                 : "N/A",
-                        status: item.status ?? clearance.clearance_status ?? "Pending",
+                        status: overallStatus,
+                        display_status: displayStatus,
                         assigner: clearance.assigner
                             ? [
                                 clearance.assigner.first_name,
                                 clearance.assigner.last_name
                             ].filter(Boolean).join(" ")
                             : null,
-                        is_approved_by_me: item.is_approved_by_me === true
+                        is_approved_by_me: isApprovedByMe
                     };
                 });
                 setClearances(mapped);
@@ -97,24 +114,24 @@ const Dashboard = () => {
         fetchClearances();
     }, []);
 
-    // Progress filter counts (match model statuses)
-    const pendingCount = clearances.filter(item => item.status?.toLowerCase() === "pending").length;
-    const inProgressCount = clearances.filter(item => item.status?.toLowerCase() === "in progress").length;
-    const approvedCount = clearances.filter(item => item.status?.toLowerCase() === "approved").length;
-    const clearedCount = clearances.filter(item => item.status?.toLowerCase() === "cleared").length;
+    // Progress filter counts — based on the logged-in user's personal status
+    const pendingCount = clearances.filter(item => item.display_status?.toLowerCase() === "pending").length;
+    const inProgressCount = clearances.filter(item => item.display_status?.toLowerCase() === "in progress").length;
+    const approvedCount = clearances.filter(item => item.display_status?.toLowerCase() === "approved").length;
+    const clearedCount = clearances.filter(item => item.display_status?.toLowerCase() === "cleared").length;
 
-    // Button labels and their corresponding status values
+    // Button labels and their corresponding display_status values
     const statusFilters = [
         { label: "Pending", value: "pending", color: "primary", count: pendingCount },
         { label: "In Progress", value: "in progress", color: "warning", count: inProgressCount },
-        { label: "Approved", value: "approved", color: "success", count: approvedCount },
+        { label: "Approved by Me", value: "approved", color: "success", count: approvedCount },
         { label: "Cleared", value: "cleared", color: "info", count: clearedCount },
     ];
 
-    // Filtered data
+    // Filtered data — filter by display_status so "Approved by Me" button works correctly
     const filteredClearances = selectedStatus === "All"
         ? clearances
-        : clearances.filter(item => item.status?.toLowerCase() === selectedStatus.toLowerCase());
+        : clearances.filter(item => item.display_status?.toLowerCase() === selectedStatus.toLowerCase());
 
     // Table columns (add actions column with View button)
     const columns: ColumnDefinition<ClearanceItem>[] = [
@@ -126,19 +143,23 @@ const Dashboard = () => {
         { dataField: "position", text: "Position", sortable: true },
         { dataField: "effectivity_date", text: "Effectivity Date", sortable: true },
         {
-            dataField: "status",
+            dataField: "display_status",
             text: "Status",
             sortable: true,
-            formatter: (cell) => {
+            formatter: (cell, row) => {
                 const status = (cell || "").toString().toLowerCase();
                 let badgeClass = "bg-secondary";
+                let label = cell;
                 if (status === "pending") badgeClass = "bg-primary";
-                else if (status === "in progress") badgeClass = "bg-warning";
-                else if (status === "approved") badgeClass = "bg-success";
-                else if (status === "cleared") badgeClass = "bg-info";
+                else if (status === "in progress") badgeClass = "bg-warning text-dark";
+                else if (status === "approved") {
+                    badgeClass = "bg-success";
+                    label = row.is_approved_by_me ? "Approved by Me" : "Approved";
+                }
+                else if (status === "cleared") badgeClass = "bg-info text-dark";
                 return (
                     <span className={`badge ${badgeClass}`}>
-                        {cell}
+                        {label}
                     </span>
                 );
             }
