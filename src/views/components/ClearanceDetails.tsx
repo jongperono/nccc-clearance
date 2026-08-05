@@ -106,17 +106,25 @@ const ClearanceDetails: React.FC<ClearanceDetailsProps> = ({
         return { bg: "#e0f2fe", color: "#0c4a6e", border: "#7dd3fc" };
     };
 
+    // Shared helper — re-fetches clearance + signatories and updates state
+    const refreshDetails = async () => {
+        try {
+            const res = await apiRequest(`/clearance/${clearanceId}/details`, "GET") as any;
+            const apiData = res?.data?.data || res?.data;
+            setClearance({ ...apiData.clearance });
+            setSignatories([...(apiData.signatories || [])]);
+        } catch (err: any) {
+            console.error("Failed to refresh clearance details", err);
+        }
+    };
+
     const handleApprove = async () => {
         if (!clearanceId || approving) return;
         setApproving(true);
         try {
             await apiRequest("/my-clearance/approve", "PUT", { clearance_id: clearanceId });
+            await refreshDetails();
             showAlert("success", "Clearance approved successfully!");
-            // Refresh details
-            const res = await apiRequest(`/clearance/${clearanceId}/details`, "GET") as any;
-            const apiData = res?.data?.data || res?.data;
-            setClearance(apiData.clearance);
-            setSignatories(apiData.signatories || []);
         } catch (err: any) {
             showAlert("error", err?.message || "Failed to approve clearance.");
         } finally {
@@ -652,12 +660,11 @@ const ClearanceDetails: React.FC<ClearanceDetailsProps> = ({
                                         try {
                                             setAdding(true);
                                             await apiRequest(`/clearance/${clearanceId}/assign-template`, 'PUT', { signatory_ids: [selectedSignatory.employee_id] });
-                                            showAlert('success', 'Signatory added successfully');
                                             setShowAddModal(false);
-                                            const res = await apiRequest(`/clearance/${clearanceId}/details`, 'GET') as any;
-                                            const apiData = res?.data?.data || res?.data;
-                                            setClearance(apiData.clearance);
-                                            setSignatories(apiData.signatories || []);
+                                            setSelectedSignatory(null);
+                                            setSearchTerm('');
+                                            await refreshDetails();
+                                            showAlert('success', `Signatory "${selectedSignatory.first_name} ${selectedSignatory.last_name}" added successfully`);
                                         } catch (err: any) {
                                             showAlert('error', err?.message || 'Failed to add signatory');
                                         } finally {
