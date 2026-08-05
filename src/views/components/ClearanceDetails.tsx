@@ -26,6 +26,8 @@ const ClearanceDetails: React.FC<ClearanceDetailsProps> = ({
     const [selectedSignatory, setSelectedSignatory] = useState<any | null>(null);
     const [canAddSignatory, setCanAddSignatory] = useState(false);
     const [remarksMap, setRemarksMap] = useState<Record<number, string>>({});
+    const [currentEmployeeId, setCurrentEmployeeId] = useState<number | null>(null);
+    const [approving, setApproving] = useState(false);
     const { showAlert, AlertComponent } = useCustomAlert();
 
     useEffect(() => {
@@ -39,6 +41,7 @@ const ClearanceDetails: React.FC<ClearanceDetailsProps> = ({
                 const perms = res?.data?.data;
                 if (perms) {
                     setCanAddSignatory(!!perms.can_add_signatory);
+                    setCurrentEmployeeId(perms.employee_id ?? null);
                 }
             } catch (err) {
                 console.error("Failed to check permissions", err);
@@ -103,6 +106,31 @@ const ClearanceDetails: React.FC<ClearanceDetailsProps> = ({
         return { bg: "#e0f2fe", color: "#0c4a6e", border: "#7dd3fc" };
     };
 
+    const handleApprove = async () => {
+        if (!clearanceId || approving) return;
+        setApproving(true);
+        try {
+            await apiRequest("/my-clearance/approve", "PUT", { clearance_id: clearanceId });
+            showAlert("success", "Clearance approved successfully!");
+            // Refresh details
+            const res = await apiRequest(`/clearance/${clearanceId}/details`, "GET") as any;
+            const apiData = res?.data?.data || res?.data;
+            setClearance(apiData.clearance);
+            setSignatories(apiData.signatories || []);
+        } catch (err: any) {
+            showAlert("error", err?.message || "Failed to approve clearance.");
+        } finally {
+            setApproving(false);
+        }
+    };
+
+    // Find this user's signatory record
+    const mySignatoryRecord = currentEmployeeId
+        ? signatories.find((s: any) => (s.Employee?.employee_id ?? s.signatory_id) === currentEmployeeId)
+        : null;
+    const hasAlreadyApproved = mySignatoryRecord?.is_approved === true;
+    const canApprove = !!mySignatoryRecord && !hasAlreadyApproved;
+
     const fullName = clearance
         ? clearance.full_name || [clearance.first_name, clearance.middle_name, clearance.last_name].filter(Boolean).join(" ")
         : "";
@@ -157,6 +185,7 @@ const ClearanceDetails: React.FC<ClearanceDetailsProps> = ({
                     <div className="alert alert-danger m-3">{error}</div>
                 ) : clearance ? (
                     <>
+                        {AlertComponent}
                         {/* Header Banner */}
                         <div style={{
                             background: "linear-gradient(135deg, #1e3a5f 0%, #2563eb 100%)",
@@ -498,6 +527,54 @@ const ClearanceDetails: React.FC<ClearanceDetailsProps> = ({
                                                                         }}>
                                                                             {status}
                                                                         </div>
+
+                                                                        {/* Approve button — only show for the current user's row */}
+                                                                        {currentEmployeeId === (emp.employee_id ?? null) && (
+                                                                            sig.is_approved === true ? (
+                                                                                <div style={{
+                                                                                    display: "flex",
+                                                                                    alignItems: "center",
+                                                                                    gap: "5px",
+                                                                                    background: "#d1fae5",
+                                                                                    color: "#065f46",
+                                                                                    border: "1px solid #6ee7b7",
+                                                                                    borderRadius: "20px",
+                                                                                    padding: "3px 12px",
+                                                                                    fontSize: "11px",
+                                                                                    fontWeight: 700,
+                                                                                    whiteSpace: "nowrap",
+                                                                                }}>
+                                                                                    ✅ You approved
+                                                                                </div>
+                                                                            ) : (
+                                                                                <button
+                                                                                    onClick={handleApprove}
+                                                                                    disabled={approving}
+                                                                                    style={{
+                                                                                        display: "flex",
+                                                                                        alignItems: "center",
+                                                                                        gap: "5px",
+                                                                                        background: approving ? "#93c5fd" : "linear-gradient(135deg, #1d4ed8, #2563eb)",
+                                                                                        color: "#fff",
+                                                                                        border: "none",
+                                                                                        borderRadius: "20px",
+                                                                                        padding: "5px 14px",
+                                                                                        fontSize: "12px",
+                                                                                        fontWeight: 700,
+                                                                                        cursor: approving ? "not-allowed" : "pointer",
+                                                                                        whiteSpace: "nowrap",
+                                                                                        boxShadow: "0 2px 6px rgba(37,99,235,0.35)",
+                                                                                        transition: "opacity 0.15s",
+                                                                                    }}
+                                                                                >
+                                                                                    {approving ? (
+                                                                                        <><Spinner as="span" animation="border" size="sm" style={{ width: "12px", height: "12px" }} /> Approving...</>
+                                                                                    ) : (
+                                                                                        <>✍️ Approve</>
+                                                                                    )}
+                                                                                </button>
+                                                                            )
+                                                                        )}
                                                                     </div>
                                                                 );
                                                             })}
@@ -599,7 +676,45 @@ const ClearanceDetails: React.FC<ClearanceDetailsProps> = ({
                 )}
             </Modal.Body>
             <Modal.Footer style={{ background: "#f8fafc", borderTop: "1px solid #e2e8f0" }}>
-                <Button variant="secondary" onClick={onHide}>
+                {canApprove && (
+                    <Button
+                        variant="success"
+                        onClick={handleApprove}
+                        disabled={approving}
+                        style={{
+                            background: "linear-gradient(135deg, #059669, #10b981)",
+                            border: "none",
+                            borderRadius: "8px",
+                            padding: "8px 20px",
+                            fontWeight: 700,
+                            fontSize: "14px",
+                            boxShadow: "0 2px 8px rgba(16,185,129,0.35)",
+                        }}
+                    >
+                        {approving ? (
+                            <><Spinner as="span" animation="border" size="sm" className="me-2" />Approving...</>
+                        ) : (
+                            <>✅ Approve Clearance</>
+                        )}
+                    </Button>
+                )}
+                {hasAlreadyApproved && !canApprove && (
+                    <div style={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: "6px",
+                        background: "#d1fae5",
+                        color: "#065f46",
+                        border: "1px solid #6ee7b7",
+                        borderRadius: "8px",
+                        padding: "8px 16px",
+                        fontSize: "13px",
+                        fontWeight: 600,
+                    }}>
+                        ✅ You have already approved this clearance
+                    </div>
+                )}
+                <Button variant="secondary" onClick={onHide} style={{ borderRadius: "8px" }}>
                     Close
                 </Button>
             </Modal.Footer>
