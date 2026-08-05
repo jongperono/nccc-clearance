@@ -129,8 +129,22 @@ const ClearanceDetails: React.FC<ClearanceDetailsProps> = ({
     return (
         <Modal show={show} onHide={onHide} size="lg">
             <Modal.Header closeButton style={{ background: "linear-gradient(135deg, #1e3a5f 0%, #2563eb 100%)", borderBottom: "none" }}>
-                <Modal.Title style={{ color: "#fff", fontWeight: 700, fontSize: "18px", display: "flex", alignItems: "center", gap: "10px" }}>
+                <Modal.Title style={{ color: "#fff", fontWeight: 700, fontSize: "18px", display: "flex", alignItems: "center", gap: "10px", flexWrap: "wrap" }}>
                     <span>📋</span> Clearance Details
+                    {clearance?.tracking_id && (
+                        <span style={{
+                            fontSize: "12px",
+                            fontWeight: 600,
+                            background: "rgba(255,255,255,0.18)",
+                            color: "#fff",
+                            borderRadius: "20px",
+                            padding: "3px 12px",
+                            letterSpacing: "0.08em",
+                            border: "1px solid rgba(255,255,255,0.3)",
+                        }}>
+                            {clearance.tracking_id}
+                        </span>
+                    )}
                 </Modal.Title>
             </Modal.Header>
             <Modal.Body style={{ background: "#f1f5f9", padding: "0" }}>
