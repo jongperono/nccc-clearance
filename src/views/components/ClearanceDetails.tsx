@@ -30,6 +30,15 @@ const ClearanceDetails: React.FC<ClearanceDetailsProps> = ({
     const [approving, setApproving] = useState(false);
     const { showAlert, AlertComponent } = useCustomAlert();
 
+    // Signatory remark modal state
+    const [showRemarkModal, setShowRemarkModal] = useState(false);
+    const [remarkTarget, setRemarkTarget] = useState<{ employeeId: number; name: string } | null>(null);
+    const [remarkText, setRemarkText] = useState("");
+    const [submittingRemark, setSubmittingRemark] = useState(false);
+
+    // Ref to allow refreshing remarks from handlers
+    const refreshRemarksRef = React.useRef<(() => Promise<void>) | null>(null);
+
     useEffect(() => {
         if (!show) return;
         setLoading(true);
@@ -78,6 +87,9 @@ const ClearanceDetails: React.FC<ClearanceDetailsProps> = ({
                 // remarks are non-critical; silently ignore errors
             }
         };
+
+        // Expose for reuse after submitting a remark
+        refreshRemarksRef.current = fetchRemarks;
 
         fetchPermissions();
         fetchDetails();
@@ -513,7 +525,46 @@ const ClearanceDetails: React.FC<ClearanceDetailsProps> = ({
 
                                                                         {/* Remarks */}
                                                                         <div style={{ flex: 2, minWidth: "100px", fontSize: "12px", color: "#475569" }}>
-                                                                            <div style={{ fontSize: "9px", fontWeight: 700, color: "#94a3b8", textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: "2px" }}>Remarks</div>
+                                                                            <div style={{ display: "flex", alignItems: "center", gap: "6px", marginBottom: "2px" }}>
+                                                                                <div style={{ fontSize: "9px", fontWeight: 700, color: "#94a3b8", textTransform: "uppercase", letterSpacing: "0.06em" }}>Remarks</div>
+                                                                                {currentEmployeeId === emp.employee_id && (
+                                                                                    <button
+                                                                                        title="Add remark"
+                                                                                        onClick={() => {
+                                                                                            setRemarkTarget({ employeeId: emp.employee_id, name });
+                                                                                            setRemarkText("");
+                                                                                            setShowRemarkModal(true);
+                                                                                        }}
+                                                                                        style={{
+                                                                                            display: "inline-flex",
+                                                                                            alignItems: "center",
+                                                                                            justifyContent: "center",
+                                                                                            width: "18px",
+                                                                                            height: "18px",
+                                                                                            borderRadius: "50%",
+                                                                                            border: "1.5px solid #93c5fd",
+                                                                                            background: "#eff6ff",
+                                                                                            color: "#2563eb",
+                                                                                            fontSize: "13px",
+                                                                                            fontWeight: 700,
+                                                                                            cursor: "pointer",
+                                                                                            lineHeight: 1,
+                                                                                            padding: 0,
+                                                                                            transition: "all 0.15s",
+                                                                                        }}
+                                                                                        onMouseEnter={(e) => {
+                                                                                            (e.currentTarget as HTMLButtonElement).style.background = "#2563eb";
+                                                                                            (e.currentTarget as HTMLButtonElement).style.color = "#fff";
+                                                                                        }}
+                                                                                        onMouseLeave={(e) => {
+                                                                                            (e.currentTarget as HTMLButtonElement).style.background = "#eff6ff";
+                                                                                            (e.currentTarget as HTMLButtonElement).style.color = "#2563eb";
+                                                                                        }}
+                                                                                    >
+                                                                                        +
+                                                                                    </button>
+                                                                                )}
+                                                                            </div>
                                                                             <div style={{
                                                                                 color: remarks === "No remarks" ? "#cbd5e1" : "#334155",
                                                                                 fontStyle: remarks === "No remarks" ? "italic" : "normal",
@@ -674,6 +725,72 @@ const ClearanceDetails: React.FC<ClearanceDetailsProps> = ({
                                     disabled={adding}
                                 >
                                     {adding ? <><Spinner as="span" animation="border" size="sm" /> Adding...</> : 'Add Selected'}
+                                </Button>
+                            </Modal.Footer>
+                        </Modal>
+
+                        {/* Signatory Remark Input Modal */}
+                        <Modal show={showRemarkModal} onHide={() => setShowRemarkModal(false)} centered size="sm">
+                            <Modal.Header closeButton style={{ background: "linear-gradient(135deg, #1e3a5f 0%, #2563eb 100%)", borderBottom: "none" }}>
+                                <Modal.Title style={{ color: "#fff", fontWeight: 700, fontSize: "15px", display: "flex", alignItems: "center", gap: "8px" }}>
+                                    <span>💬</span> Add Remark
+                                </Modal.Title>
+                            </Modal.Header>
+                            <Modal.Body>
+                                {remarkTarget && (
+                                    <div style={{ marginBottom: "12px", fontSize: "13px", color: "#475569" }}>
+                                        Signatory: <strong style={{ color: "#1e293b" }}>{remarkTarget.name}</strong>
+                                    </div>
+                                )}
+                                <Form.Control
+                                    as="textarea"
+                                    rows={3}
+                                    value={remarkText}
+                                    onChange={(e) => setRemarkText(e.target.value)}
+                                    placeholder="Type your remark..."
+                                    style={{ borderRadius: "8px", fontSize: "14px" }}
+                                />
+                            </Modal.Body>
+                            <Modal.Footer style={{ borderTop: "1px solid #e2e8f0" }}>
+                                <Button variant="secondary" size="sm" onClick={() => setShowRemarkModal(false)} style={{ borderRadius: "8px" }}>
+                                    Cancel
+                                </Button>
+                                <Button
+                                    variant="primary"
+                                    size="sm"
+                                    disabled={submittingRemark || !remarkText.trim()}
+                                    style={{
+                                        borderRadius: "8px",
+                                        background: "linear-gradient(135deg, #1d4ed8, #2563eb)",
+                                        border: "none",
+                                        fontWeight: 600,
+                                    }}
+                                    onClick={async () => {
+                                        if (!remarkTarget || !remarkText.trim()) return;
+                                        setSubmittingRemark(true);
+                                        try {
+                                            await apiRequest(`/remark`, "POST", {
+                                                clearance_id: clearanceId,
+                                                remark: remarkText.trim(),
+                                            });
+                                            // Refresh remarks map
+                                            if (refreshRemarksRef.current) await refreshRemarksRef.current();
+                                            setShowRemarkModal(false);
+                                            setRemarkText("");
+                                            setRemarkTarget(null);
+                                            showAlert("success", "Remark added successfully.");
+                                        } catch (err: any) {
+                                            showAlert("error", err?.message || "Failed to add remark.");
+                                        } finally {
+                                            setSubmittingRemark(false);
+                                        }
+                                    }}
+                                >
+                                    {submittingRemark ? (
+                                        <><Spinner as="span" animation="border" size="sm" style={{ width: "12px", height: "12px" }} /> Submitting...</>
+                                    ) : (
+                                        "Submit Remark"
+                                    )}
                                 </Button>
                             </Modal.Footer>
                         </Modal>
