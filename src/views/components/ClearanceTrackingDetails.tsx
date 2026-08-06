@@ -387,118 +387,186 @@ const ClearanceTrackingDetails: React.FC = () => {
                                 <div style={{ fontSize: "32px", marginBottom: "8px" }}>📭</div>
                                 <p style={{ margin: 0, fontSize: "0.88rem" }}>No signatories assigned yet.</p>
                             </div>
-                        ) : (
-                            <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
-                                {signatories.map((s: any, idx: number) => {
-                                    const empName = s.Employee
-                                        ? [s.Employee.first_name, s.Employee.middle_name, s.Employee.last_name].filter(Boolean).join(" ")
-                                        : "—";
-                                    const approved = s.is_approved === true;
-                                    const sigStatus = typeof s.status !== "undefined" ? s.status : (approved ? "Approved" : "Pending");
-                                    const ss = getStatusStyle(sigStatus);
-                                    return (
-                                        <div key={idx} style={{
-                                            display: "flex",
-                                            alignItems: "center",
-                                            gap: "12px",
-                                            padding: "12px 14px",
-                                            background: approved ? "#f0fdf4" : "#f8fafc",
-                                            border: `1px solid ${approved ? "#bbf7d0" : "#e2e8f0"}`,
-                                            borderRadius: "12px",
-                                            flexWrap: "wrap",
-                                        }}>
-                                            {/* Avatar */}
-                                            <div style={{
-                                                width: "38px", height: "38px", borderRadius: "50%",
-                                                background: approved ? "linear-gradient(135deg, #10b981, #059669)" : "linear-gradient(135deg, #94a3b8, #64748b)",
-                                                color: "#fff",
-                                                display: "flex", alignItems: "center", justifyContent: "center",
-                                                fontWeight: 700, fontSize: "15px", flexShrink: 0,
+                        ) : (() => {
+                            // Build a lookup map of employee_id -> remark string from the fetched remarks
+                            const remarksMap: Record<number, string> = {};
+                            remarks.forEach((r) => {
+                                if (r.employee_id != null) {
+                                    remarksMap[r.employee_id] = r.remark;
+                                }
+                            });
+
+                            // Group signatories by department_id
+                            const grouped = signatories.reduce((acc: Record<string, any[]>, sig: any) => {
+                                const deptKey = sig.Employee?.department_id || "—";
+                                if (!acc[deptKey]) acc[deptKey] = [];
+                                acc[deptKey].push(sig);
+                                return acc;
+                            }, {});
+
+                            const sortedDepts = Object.keys(grouped).sort((a, b) => a.localeCompare(b));
+
+                            const deptColors = [
+                                { header: "#1e3a5f", light: "#e0f2fe", accent: "#0369a1" },
+                                { header: "#064e3b", light: "#d1fae5", accent: "#047857" },
+                                { header: "#4c1d95", light: "#ede9fe", accent: "#6d28d9" },
+                                { header: "#7c2d12", light: "#ffedd5", accent: "#c2410c" },
+                                { header: "#1e3a5f", light: "#fef9c3", accent: "#a16207" },
+                                { header: "#1f2937", light: "#f1f5f9", accent: "#475569" },
+                            ];
+
+                            return (
+                                <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+                                    {sortedDepts.map((deptKey, dIdx) => {
+                                        const deptSignatories = [...grouped[deptKey]].sort((a, b) => {
+                                            const roleA = (a.Employee?.role_id || "").toLowerCase();
+                                            const roleB = (b.Employee?.role_id || "").toLowerCase();
+                                            return roleA.localeCompare(roleB);
+                                        });
+                                        const palette = deptColors[dIdx % deptColors.length];
+
+                                        return (
+                                            <div key={deptKey} style={{
+                                                border: `1px solid ${palette.light}`,
+                                                borderRadius: "12px",
+                                                overflow: "hidden",
                                             }}>
-                                                {empName.charAt(0).toUpperCase()}
-                                            </div>
-
-                                            {/* Info */}
-                                            <div style={{ flex: 1, minWidth: "140px" }}>
-                                                <div style={{ fontWeight: 600, fontSize: "0.9rem", color: "#1e293b" }}>{empName}</div>
-                                                <div style={{ fontSize: "0.75rem", color: "#64748b", marginTop: "2px" }}>
-                                                    {s.Employee?.email && (
-                                                        <a href={`mailto:${s.Employee.email}`} style={{ color: "#2563eb", textDecoration: "none" }}>
-                                                            {s.Employee.email}
-                                                        </a>
-                                                    )}
-                                                </div>
-                                                <div style={{ fontSize: "0.72rem", color: "#94a3b8", marginTop: "2px" }}>
-                                                    {[s.Employee?.company_id, s.Employee?.branch_id, s.Employee?.department_id].filter(Boolean).join(" · ")}
-                                                </div>
-                                            </div>
-
-                                            {/* Right: status + date */}
-                                            <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: "4px", flexShrink: 0 }}>
+                                                {/* Department header */}
                                                 <div style={{
-                                                    background: ss.bg, color: ss.color,
-                                                    border: `1px solid ${ss.border}`,
-                                                    borderRadius: "20px", padding: "3px 12px",
-                                                    fontSize: "0.72rem", fontWeight: 700,
-                                                    textTransform: "uppercase", letterSpacing: "0.05em",
-                                                    display: "flex", alignItems: "center", gap: "4px",
+                                                    background: palette.header,
+                                                    padding: "10px 16px",
+                                                    display: "flex",
+                                                    alignItems: "center",
+                                                    gap: "8px",
                                                 }}>
-                                                    {ss.icon} {sigStatus}
-                                                </div>
-                                                {s.date_approved && (
-                                                    <span style={{ fontSize: "0.7rem", color: "#94a3b8" }}>
-                                                        {new Date(s.date_approved).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
+                                                    <span style={{ fontSize: "14px" }}>🗂️</span>
+                                                    <span style={{ fontWeight: 700, fontSize: "13px", color: "#fff", letterSpacing: "0.04em", textTransform: "uppercase" }}>
+                                                        {deptKey}
                                                     </span>
-                                                )}
-                                            </div>
-                                        </div>
-                                    );
-                                })}
-                            </div>
-                        )}
-                    </div>
-                </Card>
+                                                    <span style={{
+                                                        marginLeft: "auto",
+                                                        background: "rgba(255,255,255,0.2)",
+                                                        color: "#fff",
+                                                        borderRadius: "20px",
+                                                        padding: "1px 10px",
+                                                        fontSize: "11px",
+                                                        fontWeight: 600,
+                                                    }}>
+                                                        {deptSignatories.length} {deptSignatories.length === 1 ? "signatory" : "signatories"}
+                                                    </span>
+                                                </div>
 
-                {/* ── REMARKS ── */}
-                <Card>
-                    <div className="tracking-card" style={{ animationDelay: "250ms" }}>
-                        <SectionTitle icon="💬" title="Remarks" badge={remarks.length} />
-                        {remarks.length === 0 ? (
-                            <div style={{ textAlign: "center", padding: "20px 0", color: "#94a3b8" }}>
-                                <div style={{ fontSize: "28px", marginBottom: "6px" }}>🗒️</div>
-                                <p style={{ margin: 0, fontSize: "0.85rem" }}>No remarks yet.</p>
-                            </div>
-                        ) : (
-                            <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
-                                {remarks.map((r, idx) => {
-                                    const authorName = (r as any).Employee?.full_name
-                                        || [(r as any).Employee?.first_name, (r as any).Employee?.middle_name, (r as any).Employee?.last_name].filter(Boolean).join(" ")
-                                        || `Employee #${r.employee_id}`;
-                                    return (
-                                        <div key={r.id ?? idx} style={{
-                                            background: "#f8fafc",
-                                            border: "1px solid #e2e8f0",
-                                            borderRadius: "12px",
-                                            padding: "12px 14px",
-                                        }}>
-                                            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: "8px", marginBottom: "6px", flexWrap: "wrap" }}>
-                                                <span style={{ fontWeight: 600, color: "#2563eb", fontSize: "0.82rem" }}>
-                                                    {authorName}
-                                                </span>
-                                                {r.createdAt && (
-                                                    <small style={{ color: "#94a3b8", fontSize: "0.72rem", whiteSpace: "nowrap" }}>
-                                                        {new Date(r.createdAt).toLocaleString("en-US", { month: "short", day: "numeric", year: "numeric", hour: "numeric", minute: "2-digit" })}
-                                                    </small>
-                                                )}
+                                                {/* Signatory rows with inline remarks */}
+                                                <div style={{ background: "#fff" }}>
+                                                    {deptSignatories.map((sig, sIdx) => {
+                                                        const emp = sig.Employee || {};
+                                                        const name = emp.full_name
+                                                            || [emp.first_name, emp.middle_name, emp.last_name].filter(Boolean).join(" ")
+                                                            || "—";
+                                                        const role = emp.role_id || "—";
+                                                        const remarkText = remarksMap[emp.employee_id] || sig.remarks || "No remarks";
+                                                        const approved = sig.is_approved === true;
+                                                        const sigStatus = typeof sig.status !== "undefined"
+                                                            ? sig.status
+                                                            : (approved ? "Approved" : "Pending");
+                                                        const ss = getStatusStyle(sigStatus);
+                                                        const isLast = sIdx === deptSignatories.length - 1;
+
+                                                        return (
+                                                            <div key={emp.employee_id ?? sIdx} style={{
+                                                                display: "flex",
+                                                                alignItems: "center",
+                                                                gap: "12px",
+                                                                padding: "12px 16px",
+                                                                borderBottom: isLast ? "none" : "1px solid #f1f5f9",
+                                                                flexWrap: "wrap",
+                                                            }}>
+                                                                {/* Avatar */}
+                                                                <div style={{
+                                                                    width: "36px",
+                                                                    height: "36px",
+                                                                    borderRadius: "50%",
+                                                                    background: palette.light,
+                                                                    color: palette.accent,
+                                                                    display: "flex",
+                                                                    alignItems: "center",
+                                                                    justifyContent: "center",
+                                                                    fontWeight: 700,
+                                                                    fontSize: "14px",
+                                                                    flexShrink: 0,
+                                                                }}>
+                                                                    {name.charAt(0).toUpperCase()}
+                                                                </div>
+
+                                                                {/* Name + Role */}
+                                                                <div style={{ flex: 1, minWidth: "120px" }}>
+                                                                    <div style={{ fontWeight: 600, fontSize: "14px", color: "#1e293b" }}>{name}</div>
+                                                                    <div style={{ fontSize: "11px", color: "#64748b", marginTop: "2px" }}>
+                                                                        <span style={{
+                                                                            background: palette.light,
+                                                                            color: palette.accent,
+                                                                            borderRadius: "6px",
+                                                                            padding: "1px 7px",
+                                                                            fontWeight: 600,
+                                                                            fontSize: "10px",
+                                                                        }}>
+                                                                            {role}
+                                                                        </span>
+                                                                    </div>
+                                                                    {emp.email && (
+                                                                        <div style={{ fontSize: "0.72rem", color: "#64748b", marginTop: "2px" }}>
+                                                                            <a href={`mailto:${emp.email}`} style={{ color: "#2563eb", textDecoration: "none" }}>
+                                                                                {emp.email}
+                                                                            </a>
+                                                                        </div>
+                                                                    )}
+                                                                </div>
+
+                                                                {/* Inline Remarks */}
+                                                                <div style={{ flex: 2, minWidth: "140px", fontSize: "12px", color: "#475569" }}>
+                                                                    <div style={{ fontSize: "9px", fontWeight: 700, color: "#94a3b8", textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: "2px" }}>Remarks</div>
+                                                                    <div style={{
+                                                                        color: remarkText === "No remarks" ? "#cbd5e1" : "#334155",
+                                                                        fontStyle: remarkText === "No remarks" ? "italic" : "normal",
+                                                                        wordBreak: "break-word",
+                                                                    }}>{remarkText}</div>
+                                                                </div>
+
+                                                                {/* Status badge & date */}
+                                                                <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: "4px", flexShrink: 0 }}>
+                                                                    <div style={{
+                                                                        background: ss.bg,
+                                                                        color: ss.color,
+                                                                        border: `1px solid ${ss.border}`,
+                                                                        borderRadius: "20px",
+                                                                        padding: "3px 12px",
+                                                                        fontSize: "11px",
+                                                                        fontWeight: 700,
+                                                                        textTransform: "uppercase",
+                                                                        letterSpacing: "0.06em",
+                                                                        display: "flex",
+                                                                        alignItems: "center",
+                                                                        gap: "4px",
+                                                                        whiteSpace: "nowrap",
+                                                                    }}>
+                                                                        {ss.icon} {sigStatus}
+                                                                    </div>
+                                                                    {sig.date_approved && (
+                                                                        <span style={{ fontSize: "0.7rem", color: "#94a3b8" }}>
+                                                                            {new Date(sig.date_approved).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
+                                                                        </span>
+                                                                    )}
+                                                                </div>
+                                                            </div>
+                                                        );
+                                                    })}
+                                                </div>
                                             </div>
-                                            <p style={{ margin: 0, fontSize: "0.88rem", color: "#334155", lineHeight: 1.55, wordBreak: "break-word" }}>
-                                                {r.remark}
-                                            </p>
-                                        </div>
-                                    );
-                                })}
-                            </div>
-                        )}
+                                        );
+                                    })}
+                                </div>
+                            );
+                        })()}
                     </div>
                 </Card>
 
