@@ -283,14 +283,16 @@ const Clearances = () => {
                     >
                         View
                     </Button>
-                    <Button
-                        variant="primary"
-                        size="sm"
-                        onClick={() => handleReviewClick(row)}
-                        className="ms-2"
-                    >
-                        Remarks
-                    </Button>
+                    {(row.status || "").toLowerCase() !== "cleared" && (
+                        <Button
+                            variant="primary"
+                            size="sm"
+                            onClick={() => handleReviewClick(row)}
+                            className="ms-2"
+                        >
+                            Remarks
+                        </Button>
+                    )}
                     {/* Only show Approve button if not already approved by me */}
                     {!row.is_approved_by_me && row.status !== "Approved" && row.status !== "Cleared" && (
                         <Button
@@ -357,14 +359,16 @@ const Clearances = () => {
                         >
                             View
                         </Button>
-                        <Button
-                            variant="primary"
-                            size="sm"
-                            onClick={() => handleReviewClick(row)}
-                            className="ms-2"
-                        >
-                            Remarks
-                        </Button>
+                        {(row.status || "").toLowerCase() !== "cleared" && (
+                            <Button
+                                variant="primary"
+                                size="sm"
+                                onClick={() => handleReviewClick(row)}
+                                className="ms-2"
+                            >
+                                Remarks
+                            </Button>
+                        )}
                         {/* Approve button removed for Other Clearances */}
                     </>
                 )
