@@ -314,6 +314,8 @@ const ClearanceDetails: React.FC<ClearanceDetailsProps> = ({
         ? clearance.full_name || [clearance.first_name, clearance.middle_name, clearance.last_name].filter(Boolean).join(" ")
         : "";
 
+    const isTransfer = (clearance?.purpose || "").toLowerCase().includes("transfer");
+
     const InfoField = ({ icon, label, value }: { icon: string; label: string; value: string }) => (
         <div data-print="info-field" style={{
             display: "flex",
@@ -335,9 +337,30 @@ const ClearanceDetails: React.FC<ClearanceDetailsProps> = ({
 
     return (
         <Modal show={show} onHide={onHide} size="lg">
-            <Modal.Header closeButton style={{ background: "linear-gradient(135deg, #1e3a5f 0%, #2563eb 100%)", borderBottom: "none" }}>
+            <Modal.Header closeButton style={{
+                background: isTransfer
+                    ? "linear-gradient(135deg, #78350f 0%, #d97706 100%)"
+                    : "linear-gradient(135deg, #1e3a5f 0%, #2563eb 100%)",
+                borderBottom: "none",
+            }}>
                 <Modal.Title style={{ color: "#fff", fontWeight: 700, fontSize: "18px", display: "flex", alignItems: "center", gap: "10px", flexWrap: "wrap" }}>
-                    <span>📋</span> Clearance Details
+                    <span>{isTransfer ? "🔄" : "📋"}</span>
+                    {isTransfer ? "Transfer Clearance" : "Clearance Details"}
+                    {isTransfer && (
+                        <span style={{
+                            fontSize: "11px",
+                            fontWeight: 700,
+                            background: "rgba(255,255,255,0.25)",
+                            color: "#fff",
+                            borderRadius: "20px",
+                            padding: "2px 10px",
+                            letterSpacing: "0.1em",
+                            textTransform: "uppercase",
+                            border: "1px solid rgba(255,255,255,0.45)",
+                        }}>
+                            TRANSFER
+                        </span>
+                    )}
                     {clearance?.tracking_id && (
                         <span style={{
                             fontSize: "12px",
@@ -369,7 +392,9 @@ const ClearanceDetails: React.FC<ClearanceDetailsProps> = ({
                         <div ref={printRef}>
                             {/* Header Banner */}
                             <div data-print="header" style={{
-                                background: "linear-gradient(135deg, #1e3a5f 0%, #2563eb 100%)",
+                                background: isTransfer
+                                    ? "linear-gradient(135deg, #78350f 0%, #d97706 100%)"
+                                    : "linear-gradient(135deg, #1e3a5f 0%, #2563eb 100%)",
                                 padding: "16px 24px 28px",
                                 display: "flex",
                                 alignItems: "center",
@@ -379,7 +404,26 @@ const ClearanceDetails: React.FC<ClearanceDetailsProps> = ({
                                 <img src={ncccLogo} alt="NCCC Logo" style={{ width: "70px", filter: "brightness(0) invert(1)", opacity: 0.9 }} />
                                 <div style={{ textAlign: "center", flex: 1 }}>
                                     <div data-print="subtitle" style={{ color: "rgba(255,255,255,0.75)", fontSize: "11px", letterSpacing: "0.12em", textTransform: "uppercase", marginBottom: "4px" }}>Official Document</div>
-                                    <div data-print="title" style={{ color: "#fff", fontSize: "22px", fontWeight: 700, letterSpacing: "0.01em" }}>Employee Clearance</div>
+                                    <div data-print="title" style={{ color: "#fff", fontSize: "22px", fontWeight: 700, letterSpacing: "0.01em" }}>
+                                        {isTransfer ? "🔄 Transfer Clearance" : "Employee Clearance"}
+                                    </div>
+                                    {isTransfer && (
+                                        <div style={{
+                                            display: "inline-block",
+                                            marginTop: "6px",
+                                            background: "rgba(255,255,255,0.25)",
+                                            color: "#fff",
+                                            borderRadius: "20px",
+                                            padding: "2px 14px",
+                                            fontSize: "11px",
+                                            fontWeight: 700,
+                                            letterSpacing: "0.1em",
+                                            textTransform: "uppercase",
+                                            border: "1px solid rgba(255,255,255,0.45)",
+                                        }}>
+                                            Employee Transfer
+                                        </div>
+                                    )}
                                     <div data-print="date" style={{ color: "rgba(255,255,255,0.65)", fontSize: "12px", marginTop: "4px" }}>
                                         {clearance.createdAt ? new Date(clearance.createdAt).toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" }) : "-"}
                                     </div>
@@ -436,6 +480,27 @@ const ClearanceDetails: React.FC<ClearanceDetailsProps> = ({
                                         </div>
                                         <div className="col-md-6">
                                             <InfoField icon="🎯" label="Purpose" value={clearance.purpose || "N/A"} />
+                                            {isTransfer && (
+                                                <div style={{
+                                                    marginTop: "-4px",
+                                                    marginBottom: "8px",
+                                                    padding: "6px 14px",
+                                                    borderRadius: "0 0 10px 10px",
+                                                    background: "#fef3c7",
+                                                    border: "1px solid #fde68a",
+                                                    borderTop: "none",
+                                                    fontSize: "11px",
+                                                    fontWeight: 700,
+                                                    color: "#92400e",
+                                                    letterSpacing: "0.07em",
+                                                    textTransform: "uppercase",
+                                                    display: "flex",
+                                                    alignItems: "center",
+                                                    gap: "6px",
+                                                }}>
+                                                    🔄 Transfer Clearance
+                                                </div>
+                                            )}
                                         </div>
                                         <div className="col-md-6">
                                             <InfoField icon="👔" label="Immediate Head" value={clearance.immediate_head || "N/A"} />
