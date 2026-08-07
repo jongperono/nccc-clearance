@@ -444,116 +444,99 @@ const ClearanceDetails: React.FC<ClearanceDetailsProps> = ({
                                         return a.localeCompare(b);
                                     });
 
-                                    const deptColors = [
-                                        { header: "#1e3a5f", light: "#e0f2fe", accent: "#0369a1" },
-                                        { header: "#064e3b", light: "#d1fae5", accent: "#047857" },
-                                        { header: "#4c1d95", light: "#ede9fe", accent: "#6d28d9" },
-                                        { header: "#7c2d12", light: "#ffedd5", accent: "#c2410c" },
-                                        { header: "#1e3a5f", light: "#fef9c3", accent: "#a16207" },
-                                        { header: "#1f2937", light: "#f1f5f9", accent: "#475569" },
-                                    ];
-
                                     return (
-                                        <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
-                                            {sortedDepts.map((deptKey, dIdx) => {
+                                        <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+                                            {sortedDepts.map((deptKey) => {
                                                 const deptSignatories = [...grouped[deptKey]].sort((a, b) => {
                                                     const roleA = (a.Employee?.role_id || "").toLowerCase();
                                                     const roleB = (b.Employee?.role_id || "").toLowerCase();
                                                     return roleA.localeCompare(roleB);
                                                 });
-                                                const palette = deptColors[dIdx % deptColors.length];
+                                                const isMyDept = myDeptKey !== null && String(myDeptKey) === deptKey;
 
                                                 return (
                                                     <div key={deptKey} style={{
-                                                        border: `1px solid ${palette.light}`,
-                                                        borderRadius: "12px",
+                                                        borderRadius: "10px",
                                                         overflow: "hidden",
+                                                        border: "1px solid #e2e8f0",
+                                                        boxShadow: isMyDept ? "0 0 0 2px #2563eb" : "none",
                                                     }}>
                                                         {/* Department header — click to collapse/expand */}
                                                         <div
                                                             onClick={() => setCollapsedDepts(prev => ({ ...prev, [deptKey]: !prev[deptKey] }))}
                                                             style={{
-                                                                background: palette.header,
-                                                                padding: "10px 16px",
-                                                                display: "flex",
-                                                                alignItems: "center",
-                                                                gap: "8px",
+                                                                background: "#f8fafc",
+                                                                borderBottom: collapsedDepts[deptKey] ? "none" : "1px solid #e2e8f0",
+                                                                padding: "0",
                                                                 cursor: "pointer",
                                                                 userSelect: "none",
                                                             }}
                                                         >
-                                                            <span style={{ fontSize: "14px" }}>🗂️</span>
-                                                            <span style={{ fontWeight: 700, fontSize: "13px", color: "#fff", letterSpacing: "0.04em", textTransform: "uppercase" }}>
-                                                                {deptKey}
-                                                            </span>
-                                                            {/* Approved / Total — progress widget */}
-                                                            <div style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: "6px" }}>
-                                                                {(() => {
-                                                                    const approvedCount = deptSignatories.filter(s =>
-                                                                        s.is_approved === true ||
-                                                                        (typeof s.status === "string" && s.status.toLowerCase() === "approved")
-                                                                    ).length;
-                                                                    const total = deptSignatories.length;
-                                                                    const pct = total > 0 ? Math.round((approvedCount / total) * 100) : 0;
-                                                                    const allApproved = approvedCount === total;
-                                                                    const noneApproved = approvedCount === 0;
-                                                                    const barColor = allApproved ? "#34d399" : noneApproved ? "#fbbf24" : "#60a5fa";
-                                                                    const statusLabel = allApproved ? "All Cleared" : noneApproved ? "Awaiting" : "In Progress";
-                                                                    const statusIcon = allApproved ? "✅" : noneApproved ? "🕐" : "⏳";
-                                                                    return (
-                                                                        <div style={{
-                                                                            display: "flex",
-                                                                            alignItems: "center",
-                                                                            gap: "10px",
-                                                                            background: "rgba(0,0,0,0.18)",
-                                                                            borderRadius: "20px",
-                                                                            padding: "5px 12px 5px 10px",
-                                                                            border: "1px solid rgba(255,255,255,0.12)",
-                                                                        }}>
-                                                                            {/* Fraction */}
-                                                                            <div style={{ display: "flex", alignItems: "baseline", gap: "2px" }}>
-                                                                                <span style={{ fontSize: "15px", fontWeight: 800, color: barColor, lineHeight: 1 }}>{approvedCount}</span>
-                                                                                <span style={{ fontSize: "11px", color: "rgba(255,255,255,0.5)", fontWeight: 500 }}>/{total}</span>
-                                                                            </div>
-                                                                            {/* Progress bar */}
-                                                                            <div style={{
-                                                                                width: "60px",
-                                                                                height: "5px",
-                                                                                borderRadius: "99px",
-                                                                                background: "rgba(255,255,255,0.15)",
-                                                                                overflow: "hidden",
-                                                                            }}>
-                                                                                <div style={{
-                                                                                    width: `${pct}%`,
-                                                                                    height: "100%",
-                                                                                    borderRadius: "99px",
-                                                                                    background: barColor,
-                                                                                    transition: "width 0.4s ease",
-                                                                                }} />
-                                                                            </div>
-                                                                            {/* Status label */}
+                                                            {(() => {
+                                                                const approvedCount = deptSignatories.filter(s =>
+                                                                    s.is_approved === true ||
+                                                                    (typeof s.status === "string" && s.status.toLowerCase() === "approved")
+                                                                ).length;
+                                                                const total = deptSignatories.length;
+                                                                const pct = total > 0 ? (approvedCount / total) * 100 : 0;
+                                                                const allApproved = approvedCount === total;
+                                                                const barColor = allApproved ? "#10b981" : approvedCount > 0 ? "#3b82f6" : "#f59e0b";
+                                                                const pillBg = allApproved ? "#d1fae5" : approvedCount > 0 ? "#dbeafe" : "#fef3c7";
+                                                                const pillColor = allApproved ? "#065f46" : approvedCount > 0 ? "#1d4ed8" : "#92400e";
+                                                                return (
+                                                                    <>
+                                                                        {/* Main row */}
+                                                                        <div style={{ display: "flex", alignItems: "center", gap: "10px", padding: "10px 14px 8px" }}>
+                                                                            {/* Left accent dot */}
                                                                             <span style={{
-                                                                                fontSize: "10px",
-                                                                                fontWeight: 700,
-                                                                                color: barColor,
-                                                                                letterSpacing: "0.04em",
+                                                                                width: "8px", height: "8px", borderRadius: "50%",
+                                                                                background: barColor, flexShrink: 0,
+                                                                            }} />
+                                                                            {/* Dept name */}
+                                                                            <span style={{
+                                                                                fontWeight: 700, fontSize: "13px", color: "#1e293b",
+                                                                                letterSpacing: "0.03em", textTransform: "uppercase",
+                                                                                flex: 1, minWidth: 0, overflow: "hidden",
+                                                                                textOverflow: "ellipsis", whiteSpace: "nowrap",
+                                                                            }}>
+                                                                                {deptKey}
+                                                                                {isMyDept && (
+                                                                                    <span style={{
+                                                                                        marginLeft: "8px", fontSize: "10px", fontWeight: 600,
+                                                                                        background: "#eff6ff", color: "#2563eb",
+                                                                                        borderRadius: "6px", padding: "1px 7px",
+                                                                                        border: "1px solid #bfdbfe", verticalAlign: "middle",
+                                                                                    }}>Your dept</span>
+                                                                                )}
+                                                                            </span>
+                                                                            {/* Count pill */}
+                                                                            <span style={{
+                                                                                fontSize: "11px", fontWeight: 700,
+                                                                                color: pillColor, background: pillBg,
+                                                                                borderRadius: "20px", padding: "2px 10px",
                                                                                 whiteSpace: "nowrap",
                                                                             }}>
-                                                                                {statusIcon} {statusLabel}
+                                                                                {approvedCount}/{total} approved
                                                                             </span>
+                                                                            {/* Chevron */}
+                                                                            <span style={{
+                                                                                fontSize: "11px", color: "#94a3b8",
+                                                                                display: "inline-block", transition: "transform 0.2s",
+                                                                                transform: collapsedDepts[deptKey] ? "rotate(-90deg)" : "rotate(0deg)",
+                                                                            }}>▼</span>
                                                                         </div>
-                                                                    );
-                                                                })()}
-                                                            </div>
-                                                            {/* Chevron indicator */}
-                                                            <span style={{
-                                                                marginLeft: "8px",
-                                                                fontSize: "12px",
-                                                                color: "rgba(255,255,255,0.8)",
-                                                                transition: "transform 0.2s",
-                                                                display: "inline-block",
-                                                                transform: collapsedDepts[deptKey] ? "rotate(-90deg)" : "rotate(0deg)",
-                                                            }}>▼</span>
+                                                                        {/* Progress bar */}
+                                                                        <div style={{ height: "3px", background: "#f1f5f9" }}>
+                                                                            <div style={{
+                                                                                height: "100%", width: `${pct}%`,
+                                                                                background: barColor,
+                                                                                transition: "width 0.4s ease",
+                                                                                borderRadius: "0 2px 2px 0",
+                                                                            }} />
+                                                                        </div>
+                                                                    </>
+                                                                );
+                                                            })()}
                                                         </div>
 
                                                         {/* Signatory rows — hidden when collapsed */}
@@ -586,8 +569,8 @@ const ClearanceDetails: React.FC<ClearanceDetailsProps> = ({
                                                                                 width: "36px",
                                                                                 height: "36px",
                                                                                 borderRadius: "50%",
-                                                                                background: palette.light,
-                                                                                color: palette.accent,
+                                                                                background: "#e2e8f0",
+                                                                                color: "#475569",
                                                                                 display: "flex",
                                                                                 alignItems: "center",
                                                                                 justifyContent: "center",
@@ -603,8 +586,8 @@ const ClearanceDetails: React.FC<ClearanceDetailsProps> = ({
                                                                                 <div style={{ fontWeight: 600, fontSize: "14px", color: "#1e293b" }}>{name}</div>
                                                                                 <div style={{ fontSize: "11px", color: "#64748b", marginTop: "2px" }}>
                                                                                     <span style={{
-                                                                                        background: palette.light,
-                                                                                        color: palette.accent,
+                                                                                        background: "#e2e8f0",
+                                                                                        color: "#475569",
                                                                                         borderRadius: "6px",
                                                                                         padding: "1px 7px",
                                                                                         fontWeight: 600,
