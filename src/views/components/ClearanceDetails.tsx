@@ -1,5 +1,6 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { Modal, Spinner, Button, Form, ListGroup, InputGroup } from "react-bootstrap";
+import { FaPrint } from "react-icons/fa";
 import { useCustomAlert } from "../../utils/CustomAlert";
 import ncccLogo from "../../assets/nccc_logo.png";
 import { apiRequest } from "../../utils/ApiService";
@@ -30,6 +31,41 @@ const ClearanceDetails: React.FC<ClearanceDetailsProps> = ({
     const [approving, setApproving] = useState(false);
     const [collapsedDepts, setCollapsedDepts] = useState<Record<string, boolean>>({});
     const { showAlert, AlertComponent } = useCustomAlert();
+    const printRef = useRef<HTMLDivElement>(null);
+
+    const handlePrint = () => {
+        const content = printRef.current;
+        if (!content) return;
+        const printWindow = window.open("", "_blank", "width=900,height=700");
+        if (!printWindow) return;
+        const styles = Array.from(document.styleSheets)
+            .map((ss) => {
+                try {
+                    return Array.from(ss.cssRules).map((r) => r.cssText).join("\n");
+                } catch {
+                    return "";
+                }
+            })
+            .join("\n");
+        printWindow.document.write(`
+            <!DOCTYPE html>
+            <html>
+            <head>
+                <title>Clearance – ${clearance?.tracking_id || ""}</title>
+                <style>
+                    ${styles}
+                    @page { size: A4 portrait; margin: 1.5cm; }
+                    body { background: #fff !important; font-family: sans-serif; }
+                    .no-print { display: none !important; }
+                </style>
+            </head>
+            <body>${content.innerHTML}</body>
+            </html>
+        `);
+        printWindow.document.close();
+        printWindow.focus();
+        setTimeout(() => { printWindow.print(); printWindow.close(); }, 400);
+    };
 
     // Signatory remark modal state
     const [showRemarkModal, setShowRemarkModal] = useState(false);
@@ -223,506 +259,509 @@ const ClearanceDetails: React.FC<ClearanceDetailsProps> = ({
                 ) : clearance ? (
                     <>
                         {AlertComponent}
-                        {/* Header Banner */}
-                        <div style={{
-                            background: "linear-gradient(135deg, #1e3a5f 0%, #2563eb 100%)",
-                            padding: "16px 24px 28px",
-                            display: "flex",
-                            alignItems: "center",
-                            justifyContent: "space-between",
-                            gap: "16px",
-                        }}>
-                            <img src={ncccLogo} alt="NCCC Logo" style={{ width: "70px", filter: "brightness(0) invert(1)", opacity: 0.9 }} />
-                            <div style={{ textAlign: "center", flex: 1 }}>
-                                <div style={{ color: "rgba(255,255,255,0.75)", fontSize: "11px", letterSpacing: "0.12em", textTransform: "uppercase", marginBottom: "4px" }}>Official Document</div>
-                                <div style={{ color: "#fff", fontSize: "22px", fontWeight: 700, letterSpacing: "0.01em" }}>Employee Clearance</div>
-                                <div style={{ color: "rgba(255,255,255,0.65)", fontSize: "12px", marginTop: "4px" }}>
-                                    {clearance.createdAt ? new Date(clearance.createdAt).toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" }) : "-"}
-                                </div>
-                            </div>
-                            {/* Status Badge */}
-                            {(() => {
-                                const sv = getStatusVariant(clearance.clearance_status);
-                                return (
-                                    <div style={{
-                                        background: sv.bg,
-                                        color: sv.color,
-                                        border: `1.5px solid ${sv.border}`,
-                                        borderRadius: "20px",
-                                        padding: "6px 16px",
-                                        fontWeight: 700,
-                                        fontSize: "13px",
-                                        textTransform: "uppercase",
-                                        letterSpacing: "0.08em",
-                                        whiteSpace: "nowrap",
-                                    }}>
-                                        {clearance.clearance_status || "Unknown"}
-                                    </div>
-                                );
-                            })()}
-                        </div>
-
-                        {/* Cards Container */}
-                        <div style={{ padding: "20px", marginTop: "-12px" }}>
-
-                            {/* Employee Information Card */}
+                        {/* Printable content wrapper */}
+                        <div ref={printRef}>
+                            {/* Header Banner */}
                             <div style={{
-                                background: "#fff",
-                                borderRadius: "14px",
-                                boxShadow: "0 1px 4px rgba(0,0,0,0.08), 0 4px 16px rgba(0,0,0,0.06)",
-                                padding: "20px",
-                                marginBottom: "16px",
+                                background: "linear-gradient(135deg, #1e3a5f 0%, #2563eb 100%)",
+                                padding: "16px 24px 28px",
+                                display: "flex",
+                                alignItems: "center",
+                                justifyContent: "space-between",
+                                gap: "16px",
                             }}>
-                                <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "16px", paddingBottom: "12px", borderBottom: "1px solid #e2e8f0" }}>
-                                    <span style={{ fontSize: "18px" }}>👤</span>
-                                    <span style={{ fontWeight: 700, fontSize: "15px", color: "#1e293b" }}>Employee Information</span>
-                                </div>
-                                <div className="row g-2">
-                                    <div className="col-md-6">
-                                        <InfoField icon="🪪" label="ID Number" value={String(clearance.id_number || clearance.id || "-")} />
-                                    </div>
-                                    <div className="col-md-6">
-                                        <InfoField icon="👤" label="Full Name" value={fullName || "-"} />
-                                    </div>
-                                    <div className="col-md-6">
-                                        <InfoField icon="💼" label="Position" value={clearance.position || "N/A"} />
-                                    </div>
-                                    <div className="col-md-6">
-                                        <InfoField icon="✉️" label="Email" value={clearance.email || "-"} />
-                                    </div>
-                                    <div className="col-md-6">
-                                        <InfoField icon="🎯" label="Purpose" value={clearance.purpose || "N/A"} />
-                                    </div>
-                                    <div className="col-md-6">
-                                        <InfoField icon="👔" label="Immediate Head" value={clearance.immediate_head || "N/A"} />
+                                <img src={ncccLogo} alt="NCCC Logo" style={{ width: "70px", filter: "brightness(0) invert(1)", opacity: 0.9 }} />
+                                <div style={{ textAlign: "center", flex: 1 }}>
+                                    <div style={{ color: "rgba(255,255,255,0.75)", fontSize: "11px", letterSpacing: "0.12em", textTransform: "uppercase", marginBottom: "4px" }}>Official Document</div>
+                                    <div style={{ color: "#fff", fontSize: "22px", fontWeight: 700, letterSpacing: "0.01em" }}>Employee Clearance</div>
+                                    <div style={{ color: "rgba(255,255,255,0.65)", fontSize: "12px", marginTop: "4px" }}>
+                                        {clearance.createdAt ? new Date(clearance.createdAt).toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" }) : "-"}
                                     </div>
                                 </div>
-                            </div>
-
-                            {/* Organization Information Card */}
-                            <div style={{
-                                background: "#fff",
-                                borderRadius: "14px",
-                                boxShadow: "0 1px 4px rgba(0,0,0,0.08), 0 4px 16px rgba(0,0,0,0.06)",
-                                padding: "20px",
-                                marginBottom: "16px",
-                            }}>
-                                <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "16px", paddingBottom: "12px", borderBottom: "1px solid #e2e8f0" }}>
-                                    <span style={{ fontSize: "18px" }}>🏢</span>
-                                    <span style={{ fontWeight: 700, fontSize: "15px", color: "#1e293b" }}>Organization Details</span>
-                                </div>
-                                <div className="row g-2">
-                                    <div className="col-md-4">
-                                        <InfoField icon="🏙️" label="Company" value={clearance.Company?.name || clearance.company_id || "-"} />
-                                    </div>
-                                    <div className="col-md-4">
-                                        <InfoField icon="📍" label="Branch" value={clearance.Branch?.name || clearance.branch_id || "-"} />
-                                    </div>
-                                    <div className="col-md-4">
-                                        <InfoField icon="🗂️" label="Department" value={clearance.Department?.name || clearance.department_id || "-"} />
-                                    </div>
-                                </div>
-                            </div>
-
-                            {/* Clearance Meta Card */}
-                            <div style={{
-                                background: "#fff",
-                                borderRadius: "14px",
-                                boxShadow: "0 1px 4px rgba(0,0,0,0.08), 0 4px 16px rgba(0,0,0,0.06)",
-                                padding: "20px",
-                                marginBottom: "16px",
-                            }}>
-                                <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "16px", paddingBottom: "12px", borderBottom: "1px solid #e2e8f0" }}>
-                                    <span style={{ fontSize: "18px" }}>📅</span>
-                                    <span style={{ fontWeight: 700, fontSize: "15px", color: "#1e293b" }}>Clearance Information</span>
-                                </div>
-                                <div className="row g-2">
-                                    <div className="col-md-4">
-                                        <InfoField
-                                            icon="📆"
-                                            label="Effectivity Date"
-                                            value={clearance.effectivity_date
-                                                ? new Date(clearance.effectivity_date).toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" })
-                                                : "-"}
-                                        />
-                                    </div>
-                                    <div className="col-md-4">
-                                        <InfoField
-                                            icon="🕐"
-                                            label="Date Created"
-                                            value={clearance.createdAt
-                                                ? new Date(clearance.createdAt).toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" })
-                                                : "-"}
-                                        />
-                                    </div>
-                                    <div className="col-md-4">
-                                        <InfoField icon="👨‍💼" label="Assigner" value={clearance.assigner?.full_name || clearance.assigner?.first_name
-                                            ? [clearance.assigner.first_name, clearance.assigner.last_name].filter(Boolean).join(" ")
-                                            : "-"} />
-                                    </div>
-                                    <div className="col-12">
-                                        {/* Status inline */}
-                                        {(() => {
-                                            const sv = getStatusVariant(clearance.clearance_status);
-                                            return (
-                                                <div style={{
-                                                    display: "flex",
-                                                    alignItems: "center",
-                                                    gap: "10px",
-                                                    padding: "10px 14px",
-                                                    borderRadius: "10px",
-                                                    background: sv.bg,
-                                                    border: `1px solid ${sv.border}`,
-                                                }}>
-                                                    <span style={{ fontSize: "16px" }}>🔖</span>
-                                                    <div style={{ flex: 1 }}>
-                                                        <div style={{ fontSize: "10px", fontWeight: 600, color: sv.color, opacity: 0.75, textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: "2px" }}>Status</div>
-                                                        <div style={{ fontSize: "14px", fontWeight: 700, color: sv.color }}>
-                                                            {clearance.clearance_status || "Unknown"}
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            );
-                                        })()}
-                                    </div>
-                                </div>
-                            </div>
-                            {/* Signatories Card */}
-                            <div style={{
-                                background: "#fff",
-                                borderRadius: "14px",
-                                boxShadow: "0 1px 4px rgba(0,0,0,0.08), 0 4px 16px rgba(0,0,0,0.06)",
-                                padding: "20px",
-                                marginBottom: "8px",
-                            }}>
-                                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "16px", paddingBottom: "12px", borderBottom: "1px solid #e2e8f0" }}>
-                                    <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-                                        <span style={{ fontSize: "18px" }}>✍️</span>
-                                        <span style={{ fontWeight: 700, fontSize: "15px", color: "#1e293b" }}>Signatories</span>
-                                        <span style={{
-                                            background: "#e0f2fe",
-                                            color: "#0369a1",
-                                            borderRadius: "20px",
-                                            padding: "1px 10px",
-                                            fontSize: "12px",
-                                            fontWeight: 600,
-                                        }}>{signatories.length}</span>
-                                    </div>
-                                    {canAddSignatory && (
-                                        <Button variant="primary" size="sm" onClick={() => setShowAddModal(true)} disabled={adding}
-                                            style={{ borderRadius: "8px", padding: "5px 14px", fontSize: "13px" }}>
-                                            + Add Signatory
-                                        </Button>
-                                    )}
-                                </div>
-
-                                {signatories.length === 0 ? (
-                                    <div style={{ textAlign: "center", padding: "32px 16px", color: "#94a3b8" }}>
-                                        <div style={{ fontSize: "32px", marginBottom: "8px" }}>📭</div>
-                                        <div style={{ fontSize: "14px" }}>No signatories assigned yet.</div>
-                                    </div>
-                                ) : (() => {
-                                    // Group signatories by department_id, sort dept names, then sort by role_id within each group
-                                    const grouped = signatories.reduce((acc: Record<string, any[]>, sig) => {
-                                        const deptKey = sig.Employee?.department_id || "—";
-                                        if (!acc[deptKey]) acc[deptKey] = [];
-                                        acc[deptKey].push(sig);
-                                        return acc;
-                                    }, {});
-
-                                    // Find the department of the logged-in user
-                                    const myDeptKey = currentEmployeeId
-                                        ? signatories.find((s: any) => (s.Employee?.employee_id ?? s.signatory_id) === currentEmployeeId)?.Employee?.department_id ?? null
-                                        : null;
-
-                                    // Sort departments alphabetically, but put the login user's department first
-                                    const sortedDepts = Object.keys(grouped).sort((a, b) => {
-                                        if (myDeptKey !== null) {
-                                            if (a === String(myDeptKey)) return -1;
-                                            if (b === String(myDeptKey)) return 1;
-                                        }
-                                        return a.localeCompare(b);
-                                    });
-
+                                {/* Status Badge */}
+                                {(() => {
+                                    const sv = getStatusVariant(clearance.clearance_status);
                                     return (
-                                        <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
-                                            {sortedDepts.map((deptKey) => {
-                                                const deptSignatories = [...grouped[deptKey]].sort((a, b) => {
-                                                    const roleA = (a.Employee?.role_id || "").toLowerCase();
-                                                    const roleB = (b.Employee?.role_id || "").toLowerCase();
-                                                    return roleA.localeCompare(roleB);
-                                                });
-                                                const isMyDept = myDeptKey !== null && String(myDeptKey) === deptKey;
-
-                                                return (
-                                                    <div key={deptKey} style={{
-                                                        borderRadius: "10px",
-                                                        overflow: "hidden",
-                                                        border: "1px solid #e2e8f0",
-                                                        boxShadow: isMyDept ? "0 0 0 2px #2563eb" : "none",
-                                                    }}>
-                                                        {/* Department header — click to collapse/expand */}
-                                                        <div
-                                                            onClick={() => setCollapsedDepts(prev => ({ ...prev, [deptKey]: !prev[deptKey] }))}
-                                                            style={{
-                                                                background: "#f8fafc",
-                                                                borderBottom: collapsedDepts[deptKey] ? "none" : "1px solid #e2e8f0",
-                                                                padding: "0",
-                                                                cursor: "pointer",
-                                                                userSelect: "none",
-                                                            }}
-                                                        >
-                                                            {(() => {
-                                                                const approvedCount = deptSignatories.filter(s =>
-                                                                    s.is_approved === true ||
-                                                                    (typeof s.status === "string" && s.status.toLowerCase() === "approved")
-                                                                ).length;
-                                                                const total = deptSignatories.length;
-                                                                const pct = total > 0 ? (approvedCount / total) * 100 : 0;
-                                                                const allApproved = approvedCount === total;
-                                                                const barColor = allApproved ? "#10b981" : approvedCount > 0 ? "#3b82f6" : "#f59e0b";
-                                                                const pillBg = allApproved ? "#d1fae5" : approvedCount > 0 ? "#dbeafe" : "#fef3c7";
-                                                                const pillColor = allApproved ? "#065f46" : approvedCount > 0 ? "#1d4ed8" : "#92400e";
-                                                                return (
-                                                                    <>
-                                                                        {/* Main row */}
-                                                                        <div style={{ display: "flex", alignItems: "center", gap: "10px", padding: "10px 14px 8px" }}>
-                                                                            {/* Left accent dot */}
-                                                                            <span style={{
-                                                                                width: "8px", height: "8px", borderRadius: "50%",
-                                                                                background: barColor, flexShrink: 0,
-                                                                            }} />
-                                                                            {/* Dept name */}
-                                                                            <span style={{
-                                                                                fontWeight: 700, fontSize: "13px", color: "#1e293b",
-                                                                                letterSpacing: "0.03em", textTransform: "uppercase",
-                                                                                flex: 1, minWidth: 0, overflow: "hidden",
-                                                                                textOverflow: "ellipsis", whiteSpace: "nowrap",
-                                                                            }}>
-                                                                                {deptKey}
-                                                                                {isMyDept && (
-                                                                                    <span style={{
-                                                                                        marginLeft: "8px", fontSize: "10px", fontWeight: 600,
-                                                                                        background: "#eff6ff", color: "#2563eb",
-                                                                                        borderRadius: "6px", padding: "1px 7px",
-                                                                                        border: "1px solid #bfdbfe", verticalAlign: "middle",
-                                                                                    }}>Your dept</span>
-                                                                                )}
-                                                                            </span>
-                                                                            {/* Count pill */}
-                                                                            <span style={{
-                                                                                fontSize: "11px", fontWeight: 700,
-                                                                                color: pillColor, background: pillBg,
-                                                                                borderRadius: "20px", padding: "2px 10px",
-                                                                                whiteSpace: "nowrap",
-                                                                            }}>
-                                                                                {approvedCount}/{total} approved
-                                                                            </span>
-                                                                            {/* Chevron */}
-                                                                            <span style={{
-                                                                                fontSize: "11px", color: "#94a3b8",
-                                                                                display: "inline-block", transition: "transform 0.2s",
-                                                                                transform: collapsedDepts[deptKey] ? "rotate(-90deg)" : "rotate(0deg)",
-                                                                            }}>▼</span>
-                                                                        </div>
-                                                                        {/* Progress bar */}
-                                                                        <div style={{ height: "3px", background: "#f1f5f9" }}>
-                                                                            <div style={{
-                                                                                height: "100%", width: `${pct}%`,
-                                                                                background: barColor,
-                                                                                transition: "width 0.4s ease",
-                                                                                borderRadius: "0 2px 2px 0",
-                                                                            }} />
-                                                                        </div>
-                                                                    </>
-                                                                );
-                                                            })()}
-                                                        </div>
-
-                                                        {/* Signatory rows — hidden when collapsed */}
-                                                        {!collapsedDepts[deptKey] && (
-                                                            <div style={{ background: "#fff" }}>
-                                                                {deptSignatories.map((sig, sIdx) => {
-                                                                    const emp = sig.Employee || {};
-                                                                    const name = emp.full_name
-                                                                        || [emp.first_name, emp.middle_name, emp.last_name].filter(Boolean).join(" ")
-                                                                        || "—";
-                                                                    const role = emp.role_id || "—";
-                                                                    const remarks = remarksMap[emp.employee_id] || sig.remarks || "No remarks";
-                                                                    const status = typeof sig.status !== "undefined"
-                                                                        ? sig.status
-                                                                        : (sig.is_approved === true ? "Approved" : "Pending");
-                                                                    const sv = getStatusVariant(status);
-                                                                    const isLast = sIdx === deptSignatories.length - 1;
-
-                                                                    return (
-                                                                        <div key={emp.employee_id ?? sIdx} style={{
-                                                                            display: "flex",
-                                                                            alignItems: "center",
-                                                                            gap: "12px",
-                                                                            padding: "12px 16px",
-                                                                            borderBottom: isLast ? "none" : "1px solid #f1f5f9",
-                                                                            flexWrap: "wrap",
-                                                                        }}>
-                                                                            {/* Avatar */}
-                                                                            <div style={{
-                                                                                width: "36px",
-                                                                                height: "36px",
-                                                                                borderRadius: "50%",
-                                                                                background: "#e2e8f0",
-                                                                                color: "#475569",
-                                                                                display: "flex",
-                                                                                alignItems: "center",
-                                                                                justifyContent: "center",
-                                                                                fontWeight: 700,
-                                                                                fontSize: "14px",
-                                                                                flexShrink: 0,
-                                                                            }}>
-                                                                                {name.charAt(0).toUpperCase()}
-                                                                            </div>
-
-                                                                            {/* Name + Role */}
-                                                                            <div style={{ flex: 1, minWidth: "120px" }}>
-                                                                                <div style={{ fontWeight: 600, fontSize: "14px", color: "#1e293b" }}>{name}</div>
-                                                                                <div style={{ fontSize: "11px", color: "#64748b", marginTop: "2px" }}>
-                                                                                    <span style={{
-                                                                                        background: "#e2e8f0",
-                                                                                        color: "#475569",
-                                                                                        borderRadius: "6px",
-                                                                                        padding: "1px 7px",
-                                                                                        fontWeight: 600,
-                                                                                        fontSize: "10px",
-                                                                                    }}>
-                                                                                        {role}
-                                                                                    </span>
-                                                                                </div>
-                                                                            </div>
-
-                                                                            {/* Remarks */}
-                                                                            <div style={{ flex: 2, minWidth: "100px", fontSize: "12px", color: "#475569" }}>
-                                                                                <div style={{ display: "flex", alignItems: "center", gap: "6px", marginBottom: "2px" }}>
-                                                                                    <div style={{ fontSize: "9px", fontWeight: 700, color: "#94a3b8", textTransform: "uppercase", letterSpacing: "0.06em" }}>Remarks</div>
-                                                                                    {currentEmployeeId === emp.employee_id && (clearance?.clearance_status || "").toLowerCase() !== "cleared" && (
-                                                                                        <button
-                                                                                            title="Add remark"
-                                                                                            onClick={() => {
-                                                                                                setRemarkTarget({ employeeId: emp.employee_id, name });
-                                                                                                setRemarkText("");
-                                                                                                setShowRemarkModal(true);
-                                                                                            }}
-                                                                                            style={{
-                                                                                                display: "inline-flex",
-                                                                                                alignItems: "center",
-                                                                                                justifyContent: "center",
-                                                                                                width: "18px",
-                                                                                                height: "18px",
-                                                                                                borderRadius: "50%",
-                                                                                                border: "1.5px solid #93c5fd",
-                                                                                                background: "#eff6ff",
-                                                                                                color: "#2563eb",
-                                                                                                fontSize: "13px",
-                                                                                                fontWeight: 700,
-                                                                                                cursor: "pointer",
-                                                                                                lineHeight: 1,
-                                                                                                padding: 0,
-                                                                                                transition: "all 0.15s",
-                                                                                            }}
-                                                                                            onMouseEnter={(e) => {
-                                                                                                (e.currentTarget as HTMLButtonElement).style.background = "#2563eb";
-                                                                                                (e.currentTarget as HTMLButtonElement).style.color = "#fff";
-                                                                                            }}
-                                                                                            onMouseLeave={(e) => {
-                                                                                                (e.currentTarget as HTMLButtonElement).style.background = "#eff6ff";
-                                                                                                (e.currentTarget as HTMLButtonElement).style.color = "#2563eb";
-                                                                                            }}
-                                                                                        >
-                                                                                            +
-                                                                                        </button>
-                                                                                    )}
-                                                                                </div>
-                                                                                <div style={{
-                                                                                    color: remarks === "No remarks" ? "#cbd5e1" : "#334155",
-                                                                                    fontStyle: remarks === "No remarks" ? "italic" : "normal",
-                                                                                }}>{remarks}</div>
-                                                                            </div>
-
-                                                                            {/* Status badge */}
-                                                                            <div style={{
-                                                                                background: sv.bg,
-                                                                                color: sv.color,
-                                                                                border: `1px solid ${sv.border}`,
-                                                                                borderRadius: "20px",
-                                                                                padding: "3px 12px",
-                                                                                fontSize: "11px",
-                                                                                fontWeight: 700,
-                                                                                textTransform: "uppercase",
-                                                                                letterSpacing: "0.06em",
-                                                                                whiteSpace: "nowrap",
-                                                                            }}>
-                                                                                {status}
-                                                                            </div>
-
-                                                                            {/* Approve button — only show for the current user's row */}
-                                                                            {currentEmployeeId === (emp.employee_id ?? null) && (
-                                                                                sig.is_approved === true ? (
-                                                                                    <div style={{
-                                                                                        display: "flex",
-                                                                                        alignItems: "center",
-                                                                                        gap: "5px",
-                                                                                        background: "#d1fae5",
-                                                                                        color: "#065f46",
-                                                                                        border: "1px solid #6ee7b7",
-                                                                                        borderRadius: "20px",
-                                                                                        padding: "3px 12px",
-                                                                                        fontSize: "11px",
-                                                                                        fontWeight: 700,
-                                                                                        whiteSpace: "nowrap",
-                                                                                    }}>
-                                                                                        ✅ You approved
-                                                                                    </div>
-                                                                                ) : (
-                                                                                    <button
-                                                                                        onClick={handleApprove}
-                                                                                        disabled={approving}
-                                                                                        style={{
-                                                                                            display: "flex",
-                                                                                            alignItems: "center",
-                                                                                            gap: "5px",
-                                                                                            background: approving ? "#93c5fd" : "linear-gradient(135deg, #1d4ed8, #2563eb)",
-                                                                                            color: "#fff",
-                                                                                            border: "none",
-                                                                                            borderRadius: "20px",
-                                                                                            padding: "5px 14px",
-                                                                                            fontSize: "12px",
-                                                                                            fontWeight: 700,
-                                                                                            cursor: approving ? "not-allowed" : "pointer",
-                                                                                            whiteSpace: "nowrap",
-                                                                                            boxShadow: "0 2px 6px rgba(37,99,235,0.35)",
-                                                                                            transition: "opacity 0.15s",
-                                                                                        }}
-                                                                                    >
-                                                                                        {approving ? (
-                                                                                            <><Spinner as="span" animation="border" size="sm" style={{ width: "12px", height: "12px" }} /> Approving...</>
-                                                                                        ) : (
-                                                                                            <>✍️ Approve</>
-                                                                                        )}
-                                                                                    </button>
-                                                                                )
-                                                                            )}
-                                                                        </div>
-                                                                    );
-                                                                })}
-                                                            </div>
-                                                        )}
-                                                    </div>
-                                                );
-                                            })}
+                                        <div style={{
+                                            background: sv.bg,
+                                            color: sv.color,
+                                            border: `1.5px solid ${sv.border}`,
+                                            borderRadius: "20px",
+                                            padding: "6px 16px",
+                                            fontWeight: 700,
+                                            fontSize: "13px",
+                                            textTransform: "uppercase",
+                                            letterSpacing: "0.08em",
+                                            whiteSpace: "nowrap",
+                                        }}>
+                                            {clearance.clearance_status || "Unknown"}
                                         </div>
                                     );
                                 })()}
                             </div>
 
-                        </div>{/* end cards container */}
+                            {/* Cards Container */}
+                            <div style={{ padding: "20px", marginTop: "-12px" }}>
+
+                                {/* Employee Information Card */}
+                                <div style={{
+                                    background: "#fff",
+                                    borderRadius: "14px",
+                                    boxShadow: "0 1px 4px rgba(0,0,0,0.08), 0 4px 16px rgba(0,0,0,0.06)",
+                                    padding: "20px",
+                                    marginBottom: "16px",
+                                }}>
+                                    <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "16px", paddingBottom: "12px", borderBottom: "1px solid #e2e8f0" }}>
+                                        <span style={{ fontSize: "18px" }}>👤</span>
+                                        <span style={{ fontWeight: 700, fontSize: "15px", color: "#1e293b" }}>Employee Information</span>
+                                    </div>
+                                    <div className="row g-2">
+                                        <div className="col-md-6">
+                                            <InfoField icon="🪪" label="ID Number" value={String(clearance.id_number || clearance.id || "-")} />
+                                        </div>
+                                        <div className="col-md-6">
+                                            <InfoField icon="👤" label="Full Name" value={fullName || "-"} />
+                                        </div>
+                                        <div className="col-md-6">
+                                            <InfoField icon="💼" label="Position" value={clearance.position || "N/A"} />
+                                        </div>
+                                        <div className="col-md-6">
+                                            <InfoField icon="✉️" label="Email" value={clearance.email || "-"} />
+                                        </div>
+                                        <div className="col-md-6">
+                                            <InfoField icon="🎯" label="Purpose" value={clearance.purpose || "N/A"} />
+                                        </div>
+                                        <div className="col-md-6">
+                                            <InfoField icon="👔" label="Immediate Head" value={clearance.immediate_head || "N/A"} />
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* Organization Information Card */}
+                                <div style={{
+                                    background: "#fff",
+                                    borderRadius: "14px",
+                                    boxShadow: "0 1px 4px rgba(0,0,0,0.08), 0 4px 16px rgba(0,0,0,0.06)",
+                                    padding: "20px",
+                                    marginBottom: "16px",
+                                }}>
+                                    <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "16px", paddingBottom: "12px", borderBottom: "1px solid #e2e8f0" }}>
+                                        <span style={{ fontSize: "18px" }}>🏢</span>
+                                        <span style={{ fontWeight: 700, fontSize: "15px", color: "#1e293b" }}>Organization Details</span>
+                                    </div>
+                                    <div className="row g-2">
+                                        <div className="col-md-4">
+                                            <InfoField icon="🏙️" label="Company" value={clearance.Company?.name || clearance.company_id || "-"} />
+                                        </div>
+                                        <div className="col-md-4">
+                                            <InfoField icon="📍" label="Branch" value={clearance.Branch?.name || clearance.branch_id || "-"} />
+                                        </div>
+                                        <div className="col-md-4">
+                                            <InfoField icon="🗂️" label="Department" value={clearance.Department?.name || clearance.department_id || "-"} />
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* Clearance Meta Card */}
+                                <div style={{
+                                    background: "#fff",
+                                    borderRadius: "14px",
+                                    boxShadow: "0 1px 4px rgba(0,0,0,0.08), 0 4px 16px rgba(0,0,0,0.06)",
+                                    padding: "20px",
+                                    marginBottom: "16px",
+                                }}>
+                                    <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "16px", paddingBottom: "12px", borderBottom: "1px solid #e2e8f0" }}>
+                                        <span style={{ fontSize: "18px" }}>📅</span>
+                                        <span style={{ fontWeight: 700, fontSize: "15px", color: "#1e293b" }}>Clearance Information</span>
+                                    </div>
+                                    <div className="row g-2">
+                                        <div className="col-md-4">
+                                            <InfoField
+                                                icon="📆"
+                                                label="Effectivity Date"
+                                                value={clearance.effectivity_date
+                                                    ? new Date(clearance.effectivity_date).toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" })
+                                                    : "-"}
+                                            />
+                                        </div>
+                                        <div className="col-md-4">
+                                            <InfoField
+                                                icon="🕐"
+                                                label="Date Created"
+                                                value={clearance.createdAt
+                                                    ? new Date(clearance.createdAt).toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" })
+                                                    : "-"}
+                                            />
+                                        </div>
+                                        <div className="col-md-4">
+                                            <InfoField icon="👨‍💼" label="Assigner" value={clearance.assigner?.full_name || clearance.assigner?.first_name
+                                                ? [clearance.assigner.first_name, clearance.assigner.last_name].filter(Boolean).join(" ")
+                                                : "-"} />
+                                        </div>
+                                        <div className="col-12">
+                                            {/* Status inline */}
+                                            {(() => {
+                                                const sv = getStatusVariant(clearance.clearance_status);
+                                                return (
+                                                    <div style={{
+                                                        display: "flex",
+                                                        alignItems: "center",
+                                                        gap: "10px",
+                                                        padding: "10px 14px",
+                                                        borderRadius: "10px",
+                                                        background: sv.bg,
+                                                        border: `1px solid ${sv.border}`,
+                                                    }}>
+                                                        <span style={{ fontSize: "16px" }}>🔖</span>
+                                                        <div style={{ flex: 1 }}>
+                                                            <div style={{ fontSize: "10px", fontWeight: 600, color: sv.color, opacity: 0.75, textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: "2px" }}>Status</div>
+                                                            <div style={{ fontSize: "14px", fontWeight: 700, color: sv.color }}>
+                                                                {clearance.clearance_status || "Unknown"}
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                );
+                                            })()}
+                                        </div>
+                                    </div>
+                                </div>
+                                {/* Signatories Card */}
+                                <div style={{
+                                    background: "#fff",
+                                    borderRadius: "14px",
+                                    boxShadow: "0 1px 4px rgba(0,0,0,0.08), 0 4px 16px rgba(0,0,0,0.06)",
+                                    padding: "20px",
+                                    marginBottom: "8px",
+                                }}>
+                                    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "16px", paddingBottom: "12px", borderBottom: "1px solid #e2e8f0" }}>
+                                        <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                                            <span style={{ fontSize: "18px" }}>✍️</span>
+                                            <span style={{ fontWeight: 700, fontSize: "15px", color: "#1e293b" }}>Signatories</span>
+                                            <span style={{
+                                                background: "#e0f2fe",
+                                                color: "#0369a1",
+                                                borderRadius: "20px",
+                                                padding: "1px 10px",
+                                                fontSize: "12px",
+                                                fontWeight: 600,
+                                            }}>{signatories.length}</span>
+                                        </div>
+                                        {canAddSignatory && (
+                                            <Button variant="primary" size="sm" onClick={() => setShowAddModal(true)} disabled={adding}
+                                                style={{ borderRadius: "8px", padding: "5px 14px", fontSize: "13px" }}>
+                                                + Add Signatory
+                                            </Button>
+                                        )}
+                                    </div>
+
+                                    {signatories.length === 0 ? (
+                                        <div style={{ textAlign: "center", padding: "32px 16px", color: "#94a3b8" }}>
+                                            <div style={{ fontSize: "32px", marginBottom: "8px" }}>📭</div>
+                                            <div style={{ fontSize: "14px" }}>No signatories assigned yet.</div>
+                                        </div>
+                                    ) : (() => {
+                                        // Group signatories by department_id, sort dept names, then sort by role_id within each group
+                                        const grouped = signatories.reduce((acc: Record<string, any[]>, sig) => {
+                                            const deptKey = sig.Employee?.department_id || "—";
+                                            if (!acc[deptKey]) acc[deptKey] = [];
+                                            acc[deptKey].push(sig);
+                                            return acc;
+                                        }, {});
+
+                                        // Find the department of the logged-in user
+                                        const myDeptKey = currentEmployeeId
+                                            ? signatories.find((s: any) => (s.Employee?.employee_id ?? s.signatory_id) === currentEmployeeId)?.Employee?.department_id ?? null
+                                            : null;
+
+                                        // Sort departments alphabetically, but put the login user's department first
+                                        const sortedDepts = Object.keys(grouped).sort((a, b) => {
+                                            if (myDeptKey !== null) {
+                                                if (a === String(myDeptKey)) return -1;
+                                                if (b === String(myDeptKey)) return 1;
+                                            }
+                                            return a.localeCompare(b);
+                                        });
+
+                                        return (
+                                            <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+                                                {sortedDepts.map((deptKey) => {
+                                                    const deptSignatories = [...grouped[deptKey]].sort((a, b) => {
+                                                        const roleA = (a.Employee?.role_id || "").toLowerCase();
+                                                        const roleB = (b.Employee?.role_id || "").toLowerCase();
+                                                        return roleA.localeCompare(roleB);
+                                                    });
+                                                    const isMyDept = myDeptKey !== null && String(myDeptKey) === deptKey;
+
+                                                    return (
+                                                        <div key={deptKey} style={{
+                                                            borderRadius: "10px",
+                                                            overflow: "hidden",
+                                                            border: "1px solid #e2e8f0",
+                                                            boxShadow: isMyDept ? "0 0 0 2px #2563eb" : "none",
+                                                        }}>
+                                                            {/* Department header — click to collapse/expand */}
+                                                            <div
+                                                                onClick={() => setCollapsedDepts(prev => ({ ...prev, [deptKey]: !prev[deptKey] }))}
+                                                                style={{
+                                                                    background: "#f8fafc",
+                                                                    borderBottom: collapsedDepts[deptKey] ? "none" : "1px solid #e2e8f0",
+                                                                    padding: "0",
+                                                                    cursor: "pointer",
+                                                                    userSelect: "none",
+                                                                }}
+                                                            >
+                                                                {(() => {
+                                                                    const approvedCount = deptSignatories.filter(s =>
+                                                                        s.is_approved === true ||
+                                                                        (typeof s.status === "string" && s.status.toLowerCase() === "approved")
+                                                                    ).length;
+                                                                    const total = deptSignatories.length;
+                                                                    const pct = total > 0 ? (approvedCount / total) * 100 : 0;
+                                                                    const allApproved = approvedCount === total;
+                                                                    const barColor = allApproved ? "#10b981" : approvedCount > 0 ? "#3b82f6" : "#f59e0b";
+                                                                    const pillBg = allApproved ? "#d1fae5" : approvedCount > 0 ? "#dbeafe" : "#fef3c7";
+                                                                    const pillColor = allApproved ? "#065f46" : approvedCount > 0 ? "#1d4ed8" : "#92400e";
+                                                                    return (
+                                                                        <>
+                                                                            {/* Main row */}
+                                                                            <div style={{ display: "flex", alignItems: "center", gap: "10px", padding: "10px 14px 8px" }}>
+                                                                                {/* Left accent dot */}
+                                                                                <span style={{
+                                                                                    width: "8px", height: "8px", borderRadius: "50%",
+                                                                                    background: barColor, flexShrink: 0,
+                                                                                }} />
+                                                                                {/* Dept name */}
+                                                                                <span style={{
+                                                                                    fontWeight: 700, fontSize: "13px", color: "#1e293b",
+                                                                                    letterSpacing: "0.03em", textTransform: "uppercase",
+                                                                                    flex: 1, minWidth: 0, overflow: "hidden",
+                                                                                    textOverflow: "ellipsis", whiteSpace: "nowrap",
+                                                                                }}>
+                                                                                    {deptKey}
+                                                                                    {isMyDept && (
+                                                                                        <span style={{
+                                                                                            marginLeft: "8px", fontSize: "10px", fontWeight: 600,
+                                                                                            background: "#eff6ff", color: "#2563eb",
+                                                                                            borderRadius: "6px", padding: "1px 7px",
+                                                                                            border: "1px solid #bfdbfe", verticalAlign: "middle",
+                                                                                        }}>Your dept</span>
+                                                                                    )}
+                                                                                </span>
+                                                                                {/* Count pill */}
+                                                                                <span style={{
+                                                                                    fontSize: "11px", fontWeight: 700,
+                                                                                    color: pillColor, background: pillBg,
+                                                                                    borderRadius: "20px", padding: "2px 10px",
+                                                                                    whiteSpace: "nowrap",
+                                                                                }}>
+                                                                                    {approvedCount}/{total} approved
+                                                                                </span>
+                                                                                {/* Chevron */}
+                                                                                <span style={{
+                                                                                    fontSize: "11px", color: "#94a3b8",
+                                                                                    display: "inline-block", transition: "transform 0.2s",
+                                                                                    transform: collapsedDepts[deptKey] ? "rotate(-90deg)" : "rotate(0deg)",
+                                                                                }}>▼</span>
+                                                                            </div>
+                                                                            {/* Progress bar */}
+                                                                            <div style={{ height: "3px", background: "#f1f5f9" }}>
+                                                                                <div style={{
+                                                                                    height: "100%", width: `${pct}%`,
+                                                                                    background: barColor,
+                                                                                    transition: "width 0.4s ease",
+                                                                                    borderRadius: "0 2px 2px 0",
+                                                                                }} />
+                                                                            </div>
+                                                                        </>
+                                                                    );
+                                                                })()}
+                                                            </div>
+
+                                                            {/* Signatory rows — hidden when collapsed */}
+                                                            {!collapsedDepts[deptKey] && (
+                                                                <div style={{ background: "#fff" }}>
+                                                                    {deptSignatories.map((sig, sIdx) => {
+                                                                        const emp = sig.Employee || {};
+                                                                        const name = emp.full_name
+                                                                            || [emp.first_name, emp.middle_name, emp.last_name].filter(Boolean).join(" ")
+                                                                            || "—";
+                                                                        const role = emp.role_id || "—";
+                                                                        const remarks = remarksMap[emp.employee_id] || sig.remarks || "No remarks";
+                                                                        const status = typeof sig.status !== "undefined"
+                                                                            ? sig.status
+                                                                            : (sig.is_approved === true ? "Approved" : "Pending");
+                                                                        const sv = getStatusVariant(status);
+                                                                        const isLast = sIdx === deptSignatories.length - 1;
+
+                                                                        return (
+                                                                            <div key={emp.employee_id ?? sIdx} style={{
+                                                                                display: "flex",
+                                                                                alignItems: "center",
+                                                                                gap: "12px",
+                                                                                padding: "12px 16px",
+                                                                                borderBottom: isLast ? "none" : "1px solid #f1f5f9",
+                                                                                flexWrap: "wrap",
+                                                                            }}>
+                                                                                {/* Avatar */}
+                                                                                <div style={{
+                                                                                    width: "36px",
+                                                                                    height: "36px",
+                                                                                    borderRadius: "50%",
+                                                                                    background: "#e2e8f0",
+                                                                                    color: "#475569",
+                                                                                    display: "flex",
+                                                                                    alignItems: "center",
+                                                                                    justifyContent: "center",
+                                                                                    fontWeight: 700,
+                                                                                    fontSize: "14px",
+                                                                                    flexShrink: 0,
+                                                                                }}>
+                                                                                    {name.charAt(0).toUpperCase()}
+                                                                                </div>
+
+                                                                                {/* Name + Role */}
+                                                                                <div style={{ flex: 1, minWidth: "120px" }}>
+                                                                                    <div style={{ fontWeight: 600, fontSize: "14px", color: "#1e293b" }}>{name}</div>
+                                                                                    <div style={{ fontSize: "11px", color: "#64748b", marginTop: "2px" }}>
+                                                                                        <span style={{
+                                                                                            background: "#e2e8f0",
+                                                                                            color: "#475569",
+                                                                                            borderRadius: "6px",
+                                                                                            padding: "1px 7px",
+                                                                                            fontWeight: 600,
+                                                                                            fontSize: "10px",
+                                                                                        }}>
+                                                                                            {role}
+                                                                                        </span>
+                                                                                    </div>
+                                                                                </div>
+
+                                                                                {/* Remarks */}
+                                                                                <div style={{ flex: 2, minWidth: "100px", fontSize: "12px", color: "#475569" }}>
+                                                                                    <div style={{ display: "flex", alignItems: "center", gap: "6px", marginBottom: "2px" }}>
+                                                                                        <div style={{ fontSize: "9px", fontWeight: 700, color: "#94a3b8", textTransform: "uppercase", letterSpacing: "0.06em" }}>Remarks</div>
+                                                                                        {currentEmployeeId === emp.employee_id && (clearance?.clearance_status || "").toLowerCase() !== "cleared" && (
+                                                                                            <button
+                                                                                                title="Add remark"
+                                                                                                onClick={() => {
+                                                                                                    setRemarkTarget({ employeeId: emp.employee_id, name });
+                                                                                                    setRemarkText("");
+                                                                                                    setShowRemarkModal(true);
+                                                                                                }}
+                                                                                                style={{
+                                                                                                    display: "inline-flex",
+                                                                                                    alignItems: "center",
+                                                                                                    justifyContent: "center",
+                                                                                                    width: "18px",
+                                                                                                    height: "18px",
+                                                                                                    borderRadius: "50%",
+                                                                                                    border: "1.5px solid #93c5fd",
+                                                                                                    background: "#eff6ff",
+                                                                                                    color: "#2563eb",
+                                                                                                    fontSize: "13px",
+                                                                                                    fontWeight: 700,
+                                                                                                    cursor: "pointer",
+                                                                                                    lineHeight: 1,
+                                                                                                    padding: 0,
+                                                                                                    transition: "all 0.15s",
+                                                                                                }}
+                                                                                                onMouseEnter={(e) => {
+                                                                                                    (e.currentTarget as HTMLButtonElement).style.background = "#2563eb";
+                                                                                                    (e.currentTarget as HTMLButtonElement).style.color = "#fff";
+                                                                                                }}
+                                                                                                onMouseLeave={(e) => {
+                                                                                                    (e.currentTarget as HTMLButtonElement).style.background = "#eff6ff";
+                                                                                                    (e.currentTarget as HTMLButtonElement).style.color = "#2563eb";
+                                                                                                }}
+                                                                                            >
+                                                                                                +
+                                                                                            </button>
+                                                                                        )}
+                                                                                    </div>
+                                                                                    <div style={{
+                                                                                        color: remarks === "No remarks" ? "#cbd5e1" : "#334155",
+                                                                                        fontStyle: remarks === "No remarks" ? "italic" : "normal",
+                                                                                    }}>{remarks}</div>
+                                                                                </div>
+
+                                                                                {/* Status badge */}
+                                                                                <div style={{
+                                                                                    background: sv.bg,
+                                                                                    color: sv.color,
+                                                                                    border: `1px solid ${sv.border}`,
+                                                                                    borderRadius: "20px",
+                                                                                    padding: "3px 12px",
+                                                                                    fontSize: "11px",
+                                                                                    fontWeight: 700,
+                                                                                    textTransform: "uppercase",
+                                                                                    letterSpacing: "0.06em",
+                                                                                    whiteSpace: "nowrap",
+                                                                                }}>
+                                                                                    {status}
+                                                                                </div>
+
+                                                                                {/* Approve button — only show for the current user's row */}
+                                                                                {currentEmployeeId === (emp.employee_id ?? null) && (
+                                                                                    sig.is_approved === true ? (
+                                                                                        <div style={{
+                                                                                            display: "flex",
+                                                                                            alignItems: "center",
+                                                                                            gap: "5px",
+                                                                                            background: "#d1fae5",
+                                                                                            color: "#065f46",
+                                                                                            border: "1px solid #6ee7b7",
+                                                                                            borderRadius: "20px",
+                                                                                            padding: "3px 12px",
+                                                                                            fontSize: "11px",
+                                                                                            fontWeight: 700,
+                                                                                            whiteSpace: "nowrap",
+                                                                                        }}>
+                                                                                            ✅ You approved
+                                                                                        </div>
+                                                                                    ) : (
+                                                                                        <button
+                                                                                            onClick={handleApprove}
+                                                                                            disabled={approving}
+                                                                                            style={{
+                                                                                                display: "flex",
+                                                                                                alignItems: "center",
+                                                                                                gap: "5px",
+                                                                                                background: approving ? "#93c5fd" : "linear-gradient(135deg, #1d4ed8, #2563eb)",
+                                                                                                color: "#fff",
+                                                                                                border: "none",
+                                                                                                borderRadius: "20px",
+                                                                                                padding: "5px 14px",
+                                                                                                fontSize: "12px",
+                                                                                                fontWeight: 700,
+                                                                                                cursor: approving ? "not-allowed" : "pointer",
+                                                                                                whiteSpace: "nowrap",
+                                                                                                boxShadow: "0 2px 6px rgba(37,99,235,0.35)",
+                                                                                                transition: "opacity 0.15s",
+                                                                                            }}
+                                                                                        >
+                                                                                            {approving ? (
+                                                                                                <><Spinner as="span" animation="border" size="sm" style={{ width: "12px", height: "12px" }} /> Approving...</>
+                                                                                            ) : (
+                                                                                                <>✍️ Approve</>
+                                                                                            )}
+                                                                                        </button>
+                                                                                    )
+                                                                                )}
+                                                                            </div>
+                                                                        );
+                                                                    })}
+                                                                </div>
+                                                            )}
+                                                        </div>
+                                                    );
+                                                })}
+                                            </div>
+                                        );
+                                    })()}
+                                </div>
+
+                            </div>{/* end cards container */}
+                        </div>{/* end printRef wrapper */}
 
                         {/* Add Signatory Modal */}
                         <Modal show={showAddModal} onHide={() => setShowAddModal(false)}>
@@ -876,47 +915,74 @@ const ClearanceDetails: React.FC<ClearanceDetailsProps> = ({
                 )}
             </Modal.Body>
             <Modal.Footer style={{ background: "#f8fafc", borderTop: "1px solid #e2e8f0" }}>
-                {canApprove && (
-                    <Button
-                        variant="success"
-                        onClick={handleApprove}
-                        disabled={approving}
-                        style={{
-                            background: "linear-gradient(135deg, #059669, #10b981)",
-                            border: "none",
+                {/* Left side: Print button (only when cleared) */}
+                <div style={{ flex: 1, display: "flex", alignItems: "center" }}>
+                    {clearance && (clearance.clearance_status || "").toLowerCase() === "cleared" && (
+                        <Button
+                            onClick={handlePrint}
+                            style={{
+                                background: "linear-gradient(135deg, #0f766e, #14b8a6)",
+                                border: "none",
+                                borderRadius: "8px",
+                                padding: "8px 20px",
+                                fontWeight: 700,
+                                fontSize: "14px",
+                                color: "#fff",
+                                display: "flex",
+                                alignItems: "center",
+                                gap: "7px",
+                                boxShadow: "0 2px 8px rgba(20,184,166,0.35)",
+                            }}
+                        >
+                            <FaPrint size={14} /> Print Clearance
+                        </Button>
+                    )}
+                </div>
+
+                {/* Right side: Approve / Already Approved + Close */}
+                <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                    {canApprove && (
+                        <Button
+                            variant="success"
+                            onClick={handleApprove}
+                            disabled={approving}
+                            style={{
+                                background: "linear-gradient(135deg, #059669, #10b981)",
+                                border: "none",
+                                borderRadius: "8px",
+                                padding: "8px 20px",
+                                fontWeight: 700,
+                                fontSize: "14px",
+                                boxShadow: "0 2px 8px rgba(16,185,129,0.35)",
+                            }}
+                        >
+                            {approving ? (
+                                <><Spinner as="span" animation="border" size="sm" className="me-2" />Approving...</>
+                            ) : (
+                                <>✅ Approve Clearance</>
+                            )}
+                        </Button>
+                    )}
+                    {hasAlreadyApproved && !canApprove && (
+                        <div style={{
+                            display: "flex",
+                            alignItems: "center",
+                            gap: "6px",
+                            background: "#d1fae5",
+                            color: "#065f46",
+                            border: "1px solid #6ee7b7",
                             borderRadius: "8px",
-                            padding: "8px 20px",
-                            fontWeight: 700,
-                            fontSize: "14px",
-                            boxShadow: "0 2px 8px rgba(16,185,129,0.35)",
-                        }}
-                    >
-                        {approving ? (
-                            <><Spinner as="span" animation="border" size="sm" className="me-2" />Approving...</>
-                        ) : (
-                            <>✅ Approve Clearance</>
-                        )}
+                            padding: "8px 16px",
+                            fontSize: "13px",
+                            fontWeight: 600,
+                        }}>
+                            ✅ You have already approved this clearance
+                        </div>
+                    )}
+                    <Button variant="secondary" onClick={onHide} style={{ borderRadius: "8px" }}>
+                        Close
                     </Button>
-                )}
-                {hasAlreadyApproved && !canApprove && (
-                    <div style={{
-                        display: "flex",
-                        alignItems: "center",
-                        gap: "6px",
-                        background: "#d1fae5",
-                        color: "#065f46",
-                        border: "1px solid #6ee7b7",
-                        borderRadius: "8px",
-                        padding: "8px 16px",
-                        fontSize: "13px",
-                        fontWeight: 600,
-                    }}>
-                        ✅ You have already approved this clearance
-                    </div>
-                )}
-                <Button variant="secondary" onClick={onHide} style={{ borderRadius: "8px" }}>
-                    Close
-                </Button>
+                </div>
             </Modal.Footer>
         </Modal>
     );
