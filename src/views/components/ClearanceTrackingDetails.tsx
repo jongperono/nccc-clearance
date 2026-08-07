@@ -222,6 +222,7 @@ const ClearanceTrackingDetails: React.FC = () => {
                 background: "linear-gradient(135deg, #1e3a5f 0%, #2563eb 100%)",
                 padding: "24px 20px 48px",
                 position: "relative",
+                marginBottom: "40px",
             }} className="d-print-none">
                 {/* Back button */}
                 <button

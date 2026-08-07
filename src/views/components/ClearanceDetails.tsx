@@ -527,7 +527,7 @@ const ClearanceDetails: React.FC<ClearanceDetailsProps> = ({
                                                                         <div style={{ flex: 2, minWidth: "100px", fontSize: "12px", color: "#475569" }}>
                                                                             <div style={{ display: "flex", alignItems: "center", gap: "6px", marginBottom: "2px" }}>
                                                                                 <div style={{ fontSize: "9px", fontWeight: 700, color: "#94a3b8", textTransform: "uppercase", letterSpacing: "0.06em" }}>Remarks</div>
-                                                                                {currentEmployeeId === emp.employee_id && (
+                                                                                {currentEmployeeId === emp.employee_id && (clearance?.clearance_status || "").toLowerCase() !== "cleared" && (
                                                                                     <button
                                                                                         title="Add remark"
                                                                                         onClick={() => {
