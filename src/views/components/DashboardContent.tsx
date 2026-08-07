@@ -141,7 +141,15 @@ const Dashboard = () => {
         { dataField: "department", text: "Department", sortable: true },
         { dataField: "branch", text: "Branch", sortable: true },
         { dataField: "position", text: "Position", sortable: true },
-        { dataField: "effectivity_date", text: "Effectivity Date", sortable: true },
+        {
+            dataField: "effectivity_date",
+            text: "Effectivity Date",
+            sortable: true,
+            sortValue: (cell) => {
+                const d = new Date(cell as string);
+                return isNaN(d.getTime()) ? null : d;
+            }
+        },
         {
             dataField: "display_status",
             text: "Status",
