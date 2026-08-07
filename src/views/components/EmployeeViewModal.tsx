@@ -166,6 +166,9 @@ const EmployeeViewModal: React.FC<EmployeeViewModalProps> = ({
                             <Badge bg={employee.can_access_all_clearances ? "primary" : "danger"}>
                                 {employee.can_access_all_clearances ? "Access all clearances" : "Cannot access all clearances"}
                             </Badge>
+                            <Badge bg={employee.can_add_signatory ? "primary" : "danger"}>
+                                {employee.can_add_signatory ? "Add signatory" : "Cannot add signatory"}
+                            </Badge>
                         </div>
                         <div className="mb-2 fw-semibold text-primary">Account & Template Management</div>
                         <div className="d-flex flex-wrap gap-2 mb-3">

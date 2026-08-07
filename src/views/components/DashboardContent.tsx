@@ -10,21 +10,23 @@ import ClearanceDetails from "./ClearanceDetails";
 
 interface ClearanceItem {
     id: number;
+    tracking_id: string;
     name: string;
     company: string;
     department: string;
     branch: string;
+    position: string;
+    effectivity_date: string;
     purpose: string;
     date: string;
     status: string;
+    display_status: string; // personal status for the logged-in user
     assigner?: string | null;
     is_approved_by_me?: boolean;
 }
 
 const Dashboard = () => {
     const [selectedStatus, setSelectedStatus] = useState("All");
-    const [currentPage, setCurrentPage] = useState(1);
-    const [itemsPerPage] = useState(10);
     const [clearances, setClearances] = useState<ClearanceItem[]>([]);
     const [loading, setLoading] = useState(true);
     const [showDetailsModal, setShowDetailsModal] = useState(false);
@@ -36,7 +38,7 @@ const Dashboard = () => {
         const fetchClearances = async () => {
             setLoading(true);
             try {
-                const response = await apiRequest("/my-clearances", "GET");
+                const response = await apiRequest("/my-clearances", "GET") as any;
                 const responseData = response?.data;
 
                 // Merge clearances and other_clearances if both exist
@@ -54,8 +56,24 @@ const Dashboard = () => {
 
                 const mapped = dataArr.map((item: any) => {
                     const clearance = item.Clearance || item || {};
+                    const overallStatus = item.status ?? clearance.clearance_status ?? "Pending";
+                    const isApprovedByMe = item.is_approved_by_me === true;
+
+                    // Personal display status: if the logged-in user has already approved
+                    // this clearance, show "Approved" regardless of overall progress.
+                    // If overall is Cleared, always show Cleared.
+                    let displayStatus: string;
+                    if (overallStatus?.toLowerCase() === "cleared") {
+                        displayStatus = "Cleared";
+                    } else if (isApprovedByMe) {
+                        displayStatus = "Approved";
+                    } else {
+                        displayStatus = overallStatus;
+                    }
+
                     return {
                         id: clearance.id ?? item.clearance_id ?? item.id ?? 0,
+                        tracking_id: clearance.tracking_id ?? "N/A",
                         name: [
                             clearance.first_name ?? "",
                             clearance.middle_name ?? "",
@@ -64,20 +82,25 @@ const Dashboard = () => {
                         company: clearance.Company?.name ?? clearance.company_id ?? "N/A",
                         department: clearance.Department?.name ?? clearance.department_id ?? "N/A",
                         branch: clearance.Branch?.name ?? clearance.branch_id ?? "N/A",
+                        position: clearance.position ?? "N/A",
+                        effectivity_date: clearance.effectivity_date
+                            ? new Date(clearance.effectivity_date).toLocaleDateString()
+                            : "N/A",
                         purpose: clearance.purpose ?? clearance.type ?? "N/A",
                         date: clearance.createdAt
                             ? new Date(clearance.createdAt).toLocaleDateString()
                             : clearance.created_at
                                 ? new Date(clearance.created_at).toLocaleDateString()
                                 : "N/A",
-                        status: item.status ?? clearance.clearance_status ?? "Pending",
+                        status: overallStatus,
+                        display_status: displayStatus,
                         assigner: clearance.assigner
                             ? [
                                 clearance.assigner.first_name,
                                 clearance.assigner.last_name
                             ].filter(Boolean).join(" ")
                             : null,
-                        is_approved_by_me: item.is_approved_by_me === true
+                        is_approved_by_me: isApprovedByMe
                     };
                 });
                 setClearances(mapped);
@@ -91,58 +114,58 @@ const Dashboard = () => {
         fetchClearances();
     }, []);
 
-    // Progress filter counts (match model statuses)
-    const pendingCount = clearances.filter(item => item.status?.toLowerCase() === "pending").length;
-    const inProgressCount = clearances.filter(item => item.status?.toLowerCase() === "in progress").length;
-    const approvedCount = clearances.filter(item => item.status?.toLowerCase() === "approved").length;
-    const clearedCount = clearances.filter(item => item.status?.toLowerCase() === "cleared").length;
+    // Progress filter counts — based on the logged-in user's personal status
+    const pendingCount = clearances.filter(item => item.display_status?.toLowerCase() === "pending").length;
+    const inProgressCount = clearances.filter(item => item.display_status?.toLowerCase() === "in progress").length;
+    const approvedCount = clearances.filter(item => item.display_status?.toLowerCase() === "approved").length;
+    const clearedCount = clearances.filter(item => item.display_status?.toLowerCase() === "cleared").length;
 
-    // Button labels and their corresponding status values
+    // Button labels and their corresponding display_status values
     const statusFilters = [
         { label: "Pending", value: "pending", color: "primary", count: pendingCount },
         { label: "In Progress", value: "in progress", color: "warning", count: inProgressCount },
-        { label: "Approved", value: "approved", color: "success", count: approvedCount },
+        { label: "Approved by Me", value: "approved", color: "success", count: approvedCount },
         { label: "Cleared", value: "cleared", color: "info", count: clearedCount },
     ];
 
-    // Filtered and paginated data
+    // Filtered data — filter by display_status so "Approved by Me" button works correctly
     const filteredClearances = selectedStatus === "All"
         ? clearances
-        : clearances.filter(item => item.status?.toLowerCase() === selectedStatus.toLowerCase());
-
-    const indexOfLastItem = currentPage * itemsPerPage;
-    const indexOfFirstItem = indexOfLastItem - itemsPerPage;
-    const currentItems = filteredClearances.slice(indexOfFirstItem, indexOfLastItem);
-    const totalPages = Math.ceil(filteredClearances.length / itemsPerPage);
+        : clearances.filter(item => item.display_status?.toLowerCase() === selectedStatus.toLowerCase());
 
     // Table columns (add actions column with View button)
     const columns: ColumnDefinition<ClearanceItem>[] = [
+        { dataField: "tracking_id", text: "Tracking ID", sortable: true },
         { dataField: "name", text: "Name", sortable: true },
         { dataField: "company", text: "Company", sortable: true },
         { dataField: "department", text: "Department", sortable: true },
         { dataField: "branch", text: "Branch", sortable: true },
-        { dataField: "purpose", text: "Purpose", sortable: true },
-        { dataField: "date", text: "Date", sortable: true },
+        { dataField: "position", text: "Position", sortable: true },
+        { dataField: "effectivity_date", text: "Effectivity Date", sortable: true },
         {
-            dataField: "status",
+            dataField: "display_status",
             text: "Status",
             sortable: true,
-            formatter: (cell) => {
+            formatter: (cell, row) => {
                 const status = (cell || "").toString().toLowerCase();
                 let badgeClass = "bg-secondary";
+                let label = cell;
                 if (status === "pending") badgeClass = "bg-primary";
-                else if (status === "in progress") badgeClass = "bg-warning";
-                else if (status === "approved") badgeClass = "bg-success";
-                else if (status === "cleared") badgeClass = "bg-info";
+                else if (status === "in progress") badgeClass = "bg-warning text-dark";
+                else if (status === "approved") {
+                    badgeClass = "bg-success";
+                    label = row.is_approved_by_me ? "Approved by Me" : "Approved";
+                }
+                else if (status === "cleared") badgeClass = "bg-info text-dark";
                 return (
                     <span className={`badge ${badgeClass}`}>
-                        {cell}
+                        {label}
                     </span>
                 );
             }
         },
         {
-            dataField: "actions",
+            dataField: "actions" as keyof ClearanceItem,
             text: "Actions",
             formatter: (_cell, row) => (
                 <Button
@@ -163,13 +186,12 @@ const Dashboard = () => {
         <div className="container-fluid p-2 p-md-4">
             {AlertComponent}
             <h2 className="mb-3 mb-md-4 text-primary border-bottom pb-2 fs-4 fs-md-2 d-flex justify-content-between align-items-center">
-                Dashboardss
+                Dashboard
                 <Button
                     variant="outline-secondary"
                     className={`ms-2 px-3 py-1 ${selectedStatus === "All" ? "bg-secondary text-light" : ''}`}
                     onClick={() => {
                         setSelectedStatus("All");
-                        setCurrentPage(1);
                     }}
                 >
                     All
@@ -185,7 +207,6 @@ const Dashboard = () => {
                             className={`w-100 py-2 py-md-3 transition h-100 ${selectedStatus.toLowerCase() === stat.value ? `bg-${stat.color} text-light` : ''}`}
                             onClick={() => {
                                 setSelectedStatus(stat.value);
-                                setCurrentPage(1);
                             }}
                         >
                             <h3 className="fw-bold mb-1 fs-5 fs-md-3">{stat.count}</h3>
@@ -203,7 +224,7 @@ const Dashboard = () => {
                     </div>
                 ) : (
                     <DynamicTable<ClearanceItem>
-                        data={currentItems}
+                        data={filteredClearances}
                         columns={columns}
                         keyField="id"
                         striped
@@ -211,49 +232,15 @@ const Dashboard = () => {
                         responsive
                         title="Clearance List"
                         showSearch
-                        classes={{
-                            table: 'table-sm',
-                            header: 'py-2',
-                            row: 'align-middle'
-                        }}
-                        style={{
-                            cell: { padding: '0.4rem 0.6rem' }
-                        }}
+                        showPagination
+                        pageSize={10}
                     />
                 )}
-            </div>
-            {/* PAGINATION */}
-            <div className="d-flex justify-content-between align-items-center mt-2">
-                <div>
-                    Showing {filteredClearances.length === 0 ? 0 : indexOfFirstItem + 1} to {Math.min(indexOfLastItem, filteredClearances.length)} of {filteredClearances.length} entries
-                </div>
-                <div>
-                    <Button
-                        variant="outline-secondary"
-                        size="sm"
-                        disabled={currentPage === 1}
-                        onClick={() => setCurrentPage(currentPage - 1)}
-                        className="me-2"
-                    >
-                        Previous
-                    </Button>
-                    <span className="mx-2">
-                        Page {currentPage} of {totalPages || 1}
-                    </span>
-                    <Button
-                        variant="outline-secondary"
-                        size="sm"
-                        disabled={currentPage >= totalPages}
-                        onClick={() => setCurrentPage(currentPage + 1)}
-                    >
-                        Next
-                    </Button>
-                </div>
             </div>
             <ClearanceDetails
                 show={showDetailsModal}
                 onHide={() => setShowDetailsModal(false)}
-                clearanceId={selectedClearanceId}
+                clearanceId={selectedClearanceId ?? 0}
             />
         </div>
     );

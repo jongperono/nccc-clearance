@@ -34,7 +34,7 @@ const CompanyTable = () => {
     const fetchCompanies = async () => {
         try {
             setLoading(true);
-            const res = await apiRequest("/companies", "GET");
+            const res = await apiRequest("/companies", "GET") as any;
             if (res.data.success) setCompanies(res.data.data);
         } catch {
             showAlert("error", "Failed to fetch companies.");
@@ -45,7 +45,7 @@ const CompanyTable = () => {
 
     const fetchDepartments = async () => {
         try {
-            const res = await apiRequest("/departments", "GET");
+            const res = await apiRequest("/departments", "GET") as any;
             if (res.data.success) setDepartments(res.data.data);
         } catch {
             showAlert("error", "Failed to fetch departments.");
@@ -68,7 +68,7 @@ const CompanyTable = () => {
 
     const fetchCompanyDepartments = async (companyId: string) => {
         try {
-            const res = await apiRequest(`/company/${companyId}/departments`, "GET");
+            const res = await apiRequest(`/company/${companyId}/departments`, "GET") as any;
             return res.data.success
                 ? res.data.data.map((d: Department) => d.department_id)
                 : [];
@@ -124,7 +124,7 @@ const CompanyTable = () => {
     const handleDeleteCompany = async (id: string) => {
         if (window.confirm("Are you sure you want to delete this company?")) {
             try {
-                const res = await apiRequest(`/company/${id}`, "DELETE");
+                const res = await apiRequest(`/company/${id}`, "DELETE") as any;
                 if (res.data.success) {
                     showAlert("success", "Company deleted successfully!");
                     await fetchCompanies();

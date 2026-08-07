@@ -1,15 +1,17 @@
 import React, { useState, useEffect } from "react";
 import {
     FaHome, FaTasks, FaFileAlt, FaHistory, FaSignOutAlt,
-    FaUser, FaDatabase, FaChevronDown, FaChevronRight, FaUserTie, 
+    FaUser, FaDatabase, FaChevronDown, FaChevronRight, FaUserTie,
     FaWarehouse,
     FaBuilding,
     FaCity,
-    FaClipboardCheck
+    FaClipboardCheck,
+    FaLock
 } from "react-icons/fa";
-import "./Sidebar.css"; 
+import "./Sidebar.css";
 import { apiRequest } from "../../utils/ApiService";
 import { useCustomAlert } from "../../utils/CustomAlert";
+import ncccLogo from "../../assets/nccc_logo.png";
 
 // Sidebar navigation component
 interface SidebarProps {
@@ -18,6 +20,10 @@ interface SidebarProps {
 
 // Define a type for our permissions
 interface Permissions {
+    employee_id?: number;
+    first_name?: string;
+    last_name?: string;
+    full_name?: string;
     is_signatory?: boolean;
     can_assign_clearances?: boolean;
     can_create_roles?: boolean;
@@ -53,7 +59,7 @@ const Sidebar: React.FC<SidebarProps> = ({ onSelect }) => {
         apiRequest<any>("/check-permissions", "GET")
             .then(response => {
                 console.log("Full API response:", response);
-                
+
                 // The permissions are nested inside response.data.data
                 if (response.data && response.data.data) {
                     console.log("Setting permissions to:", response.data.data);
@@ -101,6 +107,10 @@ const Sidebar: React.FC<SidebarProps> = ({ onSelect }) => {
 
     // Safely extract permissions with defaults to false
     const {
+        employee_id = null,
+        first_name = '',
+        last_name = '',
+        full_name = '',
         can_create_roles = false,
         can_create_accounts = false,
         can_create_companies = false,
@@ -108,45 +118,47 @@ const Sidebar: React.FC<SidebarProps> = ({ onSelect }) => {
         can_create_branches = false,
         can_create_templates = false,
         can_access_logs = false,
-        can_access_all_clearances = false, // <-- Added
+        // can_access_all_clearances = false, // <-- Added
         can_create_clearance_requests = false, // <-- Added
     } = permissions || {};
 
     // Check if user should see Master Files section
-    const shouldShowMasterFiles = 
-        can_create_roles || 
-        can_create_accounts || 
-        can_create_companies || 
-        can_create_departments || 
-        can_create_branches;
+    // Only employee 1 can access Master Files menu
+    const shouldShowMasterFiles = (
+        can_create_roles ||
+        can_create_accounts ||
+        can_create_companies ||
+        can_create_departments ||
+        can_create_branches
+    );
 
     return (
         <div className="sidebar">
             {/* Render alert at the top */}
             {AlertComponent}
             <div className="sidebar-logo">
-                <img src="/src/assets/nccc_logo.webp" alt="Logo" className="logo-img" />
+                <img src={ncccLogo} alt="Logo" className="logo-img" />
                 <h6 className="sidebar-title">Online Clearance</h6>
             </div>
             <div className="sidebar-menu">
-                <button 
-                    className="sidebar-btn active" 
+                <button
+                    className="sidebar-btn active"
                     onClick={() => onSelect("Home")}
                 >
                     <FaHome className="icon" />
                     <span>Home</span>
                 </button>
-                <button className="sidebar-btn" onClick={() => onSelect("Clearances")}> 
+                <button className="sidebar-btn" onClick={() => onSelect("Clearances")}>
                     <FaClipboardCheck className="icon" />
                     <span>Clearances</span>
                 </button>
                 {can_create_clearance_requests && (
-                    <button className="sidebar-btn" onClick={() => onSelect("Requests")}> 
+                    <button className="sidebar-btn" onClick={() => onSelect("Requests")}>
                         <FaTasks className="icon" />
                         <span>Requests</span>
                     </button>
                 )}
-                
+
                 {/* Master Files Section with Dropdown */}
                 {shouldShowMasterFiles && (
                     <>
@@ -197,7 +209,7 @@ const Sidebar: React.FC<SidebarProps> = ({ onSelect }) => {
                         <span>Templates</span>
                     </button>
                 )}
-                {can_access_logs && (
+                {can_access_logs && employee_id === 1 && (
                     <button className="sidebar-btn" onClick={() => onSelect("Logs")}>
                         <FaHistory className="icon" />
                         <span>Logs</span>
@@ -205,6 +217,13 @@ const Sidebar: React.FC<SidebarProps> = ({ onSelect }) => {
                 )}
             </div>
             <div className="sidebar-bottom">
+                <div className="employee-info">
+                    <p className="employee-name">{employee_id} - {full_name || `${first_name} ${last_name}`}</p>
+                </div>
+                <button className="sidebar-btn" onClick={() => onSelect("ChangePassword")}>
+                    <FaLock className="icon" />
+                    <span>Change Password</span>
+                </button>
                 <button className="sidebar-btn logout-btn" onClick={handleLogout}>
                     <FaSignOutAlt className="icon logout-icon" />
                     <span className="logout-text">Log out</span>

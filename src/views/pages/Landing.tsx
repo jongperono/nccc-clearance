@@ -3,6 +3,8 @@ import { useNavigate } from 'react-router-dom';
 import { Container, Button, Image } from 'react-bootstrap';
 import { useState } from 'react';
 import LoginModal from '../components/LoginModal';
+import bgImg from "../../assets/bg_img.webp";
+import ncccLogo from "../../assets/nccc_logo.png";
 
 export default function Main() {
     const navigate = useNavigate();
@@ -22,14 +24,15 @@ export default function Main() {
 
     return (
         <div className="landing-page">
-            <div className="bg-img"></div>
+            {/* <div className="bg-img"></div> */}
+            <div className="bg-img" style={{ backgroundImage: `url(${bgImg})` }}></div>
             <Container className="d-flex flex-column align-items-center justify-content-center mt-5 text-center">
-                <Image 
-                    src="src/assets/nccc_logo.webp" 
-                    alt="NCCC Logo" 
-                    className="img-fluid mb-4" 
-                    style={{ maxWidth: "300px" }} 
-                    rounded 
+                <Image
+                    src={ncccLogo}
+                    alt="NCCC Logo"
+                    className="img-fluid mb-4"
+                    style={{ maxWidth: "300px" }}
+                    rounded
                 />
                 <h2 className="fw-bold text-primary mb-4">ONLINE CLEARANCE SYSTEM</h2>
                 <div className="d-flex flex-column gap-3">
@@ -41,7 +44,7 @@ export default function Main() {
                     </Button>
                 </div>
             </Container>
-            
+
             <LoginModal show={showLoginModal} onHide={handleCloseLoginModal} />
         </div>
     );

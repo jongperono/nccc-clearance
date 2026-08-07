@@ -85,6 +85,23 @@
     padding-top: 10px;
 }
 
+.employee-info {
+    padding: 10px;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 8px;
+    margin-bottom: 10px;
+    text-align: center;
+}
+
+.employee-name {
+    color: white;
+    font-size: 12px;
+    font-weight: bold;
+    margin: 0;
+    word-break: break-word;
+    line-height: 1.4;
+}
+
 .logout-btn {
     display: flex;
     align-items: center;

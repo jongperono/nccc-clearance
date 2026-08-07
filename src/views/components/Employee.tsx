@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
-import { Button, Form, Spinner } from "react-bootstrap";
-import { FaEye, FaEdit, FaPlusCircle } from "react-icons/fa";
+import { Button, Form, Spinner, Modal } from "react-bootstrap";
+// import { FaEye, FaEdit, FaPlusCircle } from "react-icons/fa";
+import {FaPlusCircle } from "react-icons/fa";
 import { apiRequest } from "../../utils/ApiService";
 import { useCustomAlert } from "../../utils/CustomAlert";
 import DynamicTable, { ColumnDefinition } from "../../utils/DynamicTable";
@@ -24,16 +25,21 @@ const EmployeeTable = () => {
     });
     const [showModal, setShowModal] = useState(false);
     const [showViewModal, setShowViewModal] = useState(false);
+    const [showResetPasswordModal, setShowResetPasswordModal] = useState(false);
     const [isEditing, setIsEditing] = useState(false);
     const [departmentFilter, setDepartmentFilter] = useState("All");
     const [selectedEmployee, setSelectedEmployee] = useState<Employee | null>(null);
     const [selectedCompanyId, setSelectedCompanyId] = useState<string>("");
+    const [resetPasswordLoading, setResetPasswordLoading] = useState(false);
+    const [generatedPassword, setGeneratedPassword] = useState<string | null>(null);
+    const [resetPasswordEmployee, setResetPasswordEmployee] = useState<Employee | null>(null);
     const [newEmployee, setNewEmployee] = useState<Omit<Employee, 'id' | 'full_name'>>({
         employee_id: "",
         first_name: "",
         middle_name: "",
         last_name: "",
         phone_number: "",
+        password: "",
         email: "",
         department_id: "",
         role_id: "",
@@ -50,6 +56,8 @@ const EmployeeTable = () => {
         can_create_branches: false,
         can_create_clearance_requests: false,
         can_clear_clearances: false, // renamed from can_approve_clearances
+        can_add_signatory: false,
+        can_access_all_clearances: false, 
     });
     const { showAlert, AlertComponent } = useCustomAlert();
 
@@ -177,6 +185,7 @@ const EmployeeTable = () => {
             can_access_all_clearances: false,
             can_create_clearance_requests: false,
             can_clear_clearances: false, // renamed from can_approve_clearances
+            can_add_signatory: false,
         });
     };
 
@@ -258,6 +267,7 @@ const EmployeeTable = () => {
             can_access_all_clearances: employee.can_access_all_clearances,
             can_create_clearance_requests: employee.can_create_clearance_requests,
             can_clear_clearances: employee.can_clear_clearances, // renamed from can_approve_clearances
+            can_add_signatory: employee.can_add_signatory,
         });
         setIsEditing(true);
         setShowModal(true);
@@ -266,6 +276,37 @@ const EmployeeTable = () => {
     const handleView = (employee: Employee) => {
         setSelectedEmployee(employee);
         setShowViewModal(true);
+    };
+
+    const handleResetPassword = (employee: Employee) => {
+        setResetPasswordEmployee(employee);
+        setGeneratedPassword(null);
+        setShowResetPasswordModal(true);
+    };
+
+    const handleConfirmResetPassword = async () => {
+        if (!resetPasswordEmployee) return;
+        try {
+            setResetPasswordLoading(true);
+            const response = await apiRequest<any>(`/employee/${resetPasswordEmployee.employee_id}/reset-password`, "PUT");
+            const newPassword = response?.data?.data?.generated_password;
+            setGeneratedPassword(newPassword);
+        } catch (error) {
+            console.log(error);
+            showAlert("error", "Failed to reset password.");
+            setShowResetPasswordModal(false);
+        } finally {
+            setResetPasswordLoading(false);
+        }
+    };
+
+    const handleCloseResetPasswordModal = () => {
+        setShowResetPasswordModal(false);
+        setResetPasswordEmployee(null);
+        setGeneratedPassword(null);
+        if (generatedPassword) {
+            showAlert("success", "Password reset successfully!");
+        }
     };
 
     const columns: ColumnDefinition<Employee>[] = [
@@ -341,6 +382,15 @@ const EmployeeTable = () => {
                         className="ms-2"
                     >
                         Edit
+                    </Button>
+                    <Button 
+                        variant="danger" 
+                        size="sm" 
+                        onClick={() => handleResetPassword(row)}
+                        title="Reset Password"
+                        className="ms-2"
+                    >
+                        Reset Password
                     </Button>
                 </>
             )
@@ -463,6 +513,70 @@ const EmployeeTable = () => {
                 departments={departments}
                 companies={companies}
             />
+
+            {/* Password Reset Modal */}
+            <Modal show={showResetPasswordModal} onHide={handleCloseResetPasswordModal} centered>
+                <Modal.Header closeButton>
+                    <Modal.Title>Reset Password</Modal.Title>
+                </Modal.Header>
+                <Modal.Body>
+                    {!generatedPassword ? (
+                        <div>
+                            <p>Are you sure you want to reset the password for:</p>
+                            <p className="fw-bold text-primary">{resetPasswordEmployee?.full_name}</p>
+                            <p className="text-muted small">A new password will be generated and displayed.</p>
+                        </div>
+                    ) : (
+                        <div className="alert alert-success">
+                            <h6 className="alert-heading">Password Reset Successfully!</h6>
+                            <Form.Group>
+                                <Form.Label className="mb-1">New Password</Form.Label>
+                                <div className="d-flex gap-2 align-items-center">
+                                    <Form.Control
+                                        type="text"
+                                        readOnly
+                                        value={generatedPassword || ""}
+                                        className="bg-white"
+                                    />
+                                    <Button
+                                        variant="outline-secondary"
+                                        size="sm"
+                                        onClick={() => {
+                                            if (generatedPassword) {
+                                                navigator.clipboard.writeText(generatedPassword);
+                                                showAlert("success", "Password copied to clipboard.");
+                                            }
+                                        }}
+                                    >
+                                        Copy
+                                    </Button>
+                                </div>
+                            </Form.Group>
+                            <p className="mt-2 mb-0 small text-muted">Please share this password with the employee. They can change it after logging in.</p>
+                        </div>
+                    )}
+                </Modal.Body>
+                <Modal.Footer>
+                    {!generatedPassword ? (
+                        <>
+                            <Button variant="secondary" onClick={handleCloseResetPasswordModal}>
+                                Cancel
+                            </Button>
+                            <Button 
+                                variant="danger" 
+                                onClick={handleConfirmResetPassword}
+                                disabled={resetPasswordLoading}
+                            >
+                                {resetPasswordLoading ? <><Spinner as="span" animation="border" size="sm" className="me-2" /> Resetting...</> : 'Reset Password'}
+                            </Button>
+                        </>
+                    ) : (
+                        <Button variant="success" onClick={handleCloseResetPasswordModal}>
+                            Done
+                        </Button>
+                    )}
+                </Modal.Footer>
+            </Modal>
 
             {AlertComponent}
         </div>

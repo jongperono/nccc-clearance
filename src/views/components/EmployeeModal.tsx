@@ -13,7 +13,7 @@ interface Employee {
     last_name: string;
     phone_number: string | number;
     email: string;
-    password: string;
+    password?: string;
     role_id: string;
     branch_id: string;
     department_id: string;
@@ -26,6 +26,7 @@ interface Employee {
     can_access_all_clearances: boolean;
     can_create_clearance_requests: boolean;
     can_clear_clearances: boolean;
+    can_add_signatory: boolean;
     can_create_roles: boolean;
     can_create_companies: boolean;
     can_create_departments: boolean;
@@ -513,6 +514,16 @@ const EmployeeModal: React.FC<EmployeeModalProps> = ({
                                     label="Access all clearances" 
                                     name="can_access_all_clearances"
                                     checked={!!employee.can_access_all_clearances}
+                                    onChange={handleCheckboxChange}
+                                />
+                            </Col>
+                            <Col xs={12} sm={6} md={4}>
+                                <Form.Check 
+                                    type="checkbox" 
+                                    id="can_add_signatory"
+                                    label="Add signatory" 
+                                    name="can_add_signatory"
+                                    checked={!!employee.can_add_signatory}
                                     onChange={handleCheckboxChange}
                                 />
                             </Col>

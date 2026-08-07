@@ -26,6 +26,7 @@ export interface Employee {
   can_access_all_clearances: boolean;
   can_create_clearance_requests: boolean;
   can_clear_clearances: boolean;
+  can_add_signatory: boolean;
   createdAt?: string;
   updatedAt?: string;
   deletedAt?: string | null;

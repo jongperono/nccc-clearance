@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { Link } from "react-router-dom";
 import DynamicTable, { ColumnDefinition } from "../utils/DynamicTable";
-import ncccLogo from "../assets/nccc_logo.webp";
+import ncccLogo from "../assets/nccc_logo.png";
 import { FaPrint } from "react-icons/fa";
 
 interface Clearance {
@@ -17,7 +17,7 @@ interface Clearance {
 }
 
 const ClearanceStatus: React.FC = () => {
-  const [clearances, setClearances] = useState<Clearance[]>([
+  const [clearances] = useState<Clearance[]>([
     {
       id: "1",
       department: "ISD Dept.",

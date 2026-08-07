@@ -10,6 +10,7 @@ import TemplatePreviewModal from "./TemplatePreviewModal";
 // --- Interfaces ---
 interface ClearanceRequest {
     id: number;
+    requestId?: string;
     company: string;
     company_id: string;
     name: string;
@@ -19,6 +20,10 @@ interface ClearanceRequest {
     department: string;
     department_id: string;
     purpose: string;
+    id_number: string;
+    effectivity_date: string;
+    position: string;
+    immediate_head: string;
 }
 
 interface NewClearanceRequest {
@@ -30,6 +35,10 @@ interface NewClearanceRequest {
     branch_id: string;
     department_id: string;
     purpose: string;
+    id_number: string;
+    effectivity_date: string;
+    immediate_head: string;
+    position: string;
 }
 
 interface TemplateData {
@@ -39,6 +48,13 @@ interface TemplateData {
     department_id: number;
     company_id: number;
     purpose: string;
+    footer_message?: string;
+    creator_employee?: {
+        first_name: string;
+        last_name: string;
+        email?: string;
+        role_id?: string;
+    };
 }
 
 interface Company {
@@ -75,13 +91,17 @@ const ClearanceRequest: React.FC = () => {
         company_id: '',
         branch_id: '',
         department_id: '',
-        purpose: ''
+        purpose: '',
+        id_number: '',
+        effectivity_date: '',
+        immediate_head: '',
+        position: '',
     });
     const [showAssignModal, setShowAssignModal] = useState(false);
     const [selectedRequest, setSelectedRequest] = useState<ClearanceRequest | null>(null);
     const [filteredTemplates, setFilteredTemplates] = useState<TemplateData[]>([]);
     const [assigning, setAssigning] = useState(false);
-    const [templates, setTemplates] = useState<TemplateData[]>([]);
+    // const [templates, setTemplates] = useState<TemplateData[]>([]);
     // --- Template Preview Modal State ---
     const [showViewModal, setShowViewModal] = useState(false);
     const [templatePreviewData, setTemplatePreviewData] = useState<{ title: string; purpose: string; footer_message?: string }>({ title: "", purpose: "", footer_message: "" });
@@ -92,17 +112,17 @@ const ClearanceRequest: React.FC = () => {
 
     // --- Table Columns ---
     const columns: ColumnDefinition<ClearanceRequest>[] = [
-        { dataField: "id", text: "ID", sortable: true },
+        { dataField: "id_number", text: "ID Number", sortable: true },
         { dataField: "name", text: "Name", sortable: true },
         { dataField: "email", text: "Email", sortable: true },
         { dataField: "company", text: "Company", sortable: true },
         { dataField: "department", text: "Department", sortable: true },
         { dataField: "branch", text: "Branch", sortable: true },
-        { dataField: "purpose", text: "Purpose", sortable: true },
+        { dataField: "effectivity_date", text: "Effectivity Date", sortable: true },
         {
             dataField: "id",
             text: "Action",
-            formatter: (_cell: number, row: ClearanceRequest) => (
+            formatter: (_cell: string | number | undefined, row: ClearanceRequest) => (
                 <Button
                     variant="success"
                     size="sm"
@@ -114,36 +134,36 @@ const ClearanceRequest: React.FC = () => {
         }
     ];
 
-    const templateColumns: ColumnDefinition<TemplateData>[] = [
-        { dataField: "title", text: "Title", sortable: true },
-        { dataField: "purpose", text: "Purpose", sortable: true },
-        {
-            dataField: "template_id",
-            text: "Actions",
-            headerStyle: { width: '160px' },
-            formatter: (_cell: number, row: TemplateData) => (
-                <>
-                    <Button
-                        variant="primary"
-                        size="sm"
-                        onClick={() => handleViewTemplate(row)}
-                        className="ms-2"
-                    >
-                        View
-                    </Button>
-                    <Button
-                        variant="success"
-                        size="sm"
-                        onClick={() => handleAssignTemplate(row)}
-                        disabled={assigning}
-                        className="ms-2"
-                    >
-                        {assigning ? <Spinner animation="border" size="sm" /> : "Assign"}
-                    </Button>
-                </>
-            )
-        }
-    ];
+    // const templateColumns: ColumnDefinition<TemplateData>[] = [
+    //     { dataField: "title", text: "Title", sortable: true },
+    //     { dataField: "purpose", text: "Purpose", sortable: true },
+    //     {
+    //         dataField: "template_id",
+    //         text: "Actions",
+    //         headerStyle: { width: '160px' },
+    //         formatter: (_cell: string | number | undefined, row: TemplateData) => (
+    //             <>
+    //                 <Button
+    //                     variant="primary"
+    //                     size="sm"
+    //                     onClick={() => handleViewTemplate(row)}
+    //                     className="ms-2"
+    //                 >
+    //                     View
+    //                 </Button>
+    //                 <Button
+    //                     variant="success"
+    //                     size="sm"
+    //                     onClick={() => handleAssignTemplate(row)}
+    //                     disabled={assigning}
+    //                     className="ms-2"
+    //                 >
+    //                     {assigning ? <Spinner animation="border" size="sm" /> : "Assign"}
+    //                 </Button>
+    //             </>
+    //         )
+    //     }
+    // ];
 
     // --- Filtering ---
     const filterPredicate = (request: ClearanceRequest, searchTerm: string) =>
@@ -164,7 +184,7 @@ const ClearanceRequest: React.FC = () => {
     ];
 
     // --- Form Handlers ---
-    const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+    const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
         const { name, value } = e.target;
         setNewRequest(prev => ({
             ...prev,
@@ -201,6 +221,7 @@ const ClearanceRequest: React.FC = () => {
         setValidated(true);
         if (validateForm()) {
             try {
+                console.log('Submitting data:', newRequest);
                 await apiRequest("/clearances", "POST", newRequest);
                 fetchRequests();
                 setNewRequest({
@@ -211,7 +232,11 @@ const ClearanceRequest: React.FC = () => {
                     company_id: '',
                     branch_id: '',
                     department_id: '',
-                    purpose: ''
+                    purpose: '',
+                    id_number: '',
+                    effectivity_date: '',
+                    immediate_head: '',
+                    position: '',
                 });
                 setShowModal(false);
                 setValidated(false);
@@ -237,7 +262,7 @@ const ClearanceRequest: React.FC = () => {
             footer_message: template.footer_message
         });
         try {
-            const signatoryResponse = await apiRequest(`/template/${template.template_id}/signatories`, "GET");
+            const signatoryResponse = await apiRequest(`/template/${template.template_id}/signatories`, "GET") as any;
             if (signatoryResponse?.data?.success) {
                 const mappedSignatories = (signatoryResponse.data.data || []).map((sig: any) => ({
                     id: sig.employee_id,
@@ -317,7 +342,7 @@ const ClearanceRequest: React.FC = () => {
         try {
             const res = await apiRequest<{ data: { success: boolean; data: Branch[] } }>("/branches", "GET");
             if (res.data.success) setBranches(res.data.data);
-        } catch { 
+        } catch {
             showAlert("error", "Failed to fetch branches.");
         }
     };
@@ -334,7 +359,7 @@ const ClearanceRequest: React.FC = () => {
     // --- Fetch Clearance Requests ---
     const fetchRequests = async () => {
         try {
-            const response = await apiRequest("/clearances", "GET");
+            const response = await apiRequest("/clearances", "GET") as any;
             const responseData = response.data.data;
             // Only show requests without assigner
             const filteredData = Array.isArray(responseData)
@@ -346,11 +371,14 @@ const ClearanceRequest: React.FC = () => {
             const transformedData = filteredData.map((r: any) => ({
                 ...r,
                 requestId: `${r.id}-${r.email}`,
-                name: `${r.first_name} ${r.last_name}`,
-                company: r.company_id || "N/A",
-                branch: r.branch_id || "N/A",
-                department: r.department_id || "N/A",
-                purpose: r.purpose || "N/A",
+                name: `${r.first_name}${r.middle_name ? ' ' + r.middle_name : ''} ${r.last_name}`,
+                company: r.Company?.company_name || r.company_id || "N/A",
+                branch: r.Branch?.branch_name || r.branch_id || "N/A",
+                department: r.Department?.department_name || r.department_id || "N/A",
+                id_number: r.id_number || "N/A",
+                effectivity_date: r.effectivity_date || "N/A",
+                position: r.position || "N/A",
+                immediate_head: r.immediate_head || "N/A",
             }));
             setRequests(transformedData);
         } catch {
@@ -361,20 +389,23 @@ const ClearanceRequest: React.FC = () => {
     };
 
     // --- Fetch Templates for Assignment ---
-    const fetchTemplatesForRequest = async (clearanceRequestId: number) => {
+    const fetchTemplatesForRequest = async (_clearanceRequestId: number) => {
         try {
             const res = await apiRequest<{ data: { success: boolean; data: TemplateData[] } }>(
                 `/templates`, "GET"
             );
             if (res.data.success) {
-                setTemplates(res.data.data);
-                setFilteredTemplates(res.data.data);
+                // setTemplates(res.data.data);
+                const sorted = [...res.data.data].sort((a, b) =>
+                    a.title.localeCompare(b.title)
+                );
+                setFilteredTemplates(sorted);
             } else {
-                setTemplates([]);
+                // setTemplates([]);
                 setFilteredTemplates([]);
             }
         } catch {
-            setTemplates([]);
+            // setTemplates([]);
             setFilteredTemplates([]);
         }
     };
@@ -415,14 +446,14 @@ const ClearanceRequest: React.FC = () => {
                 showSearch
                 showPagination
                 pageSize={10}
-                classes={{
-                    table: 'table-sm',
-                    header: 'py-2',
-                    row: 'align-middle'
-                }}
-                style={{
-                    cell: { padding: '0.4rem 0.6rem' }
-                }}
+                // classes={{
+                //     table: 'table-sm',
+                //     header: 'py-2',
+                //     row: 'align-middle'
+                // }}
+                // style={{
+                //     cell: { padding: '0.4rem 0.6rem' }
+                // }}
                 additionalFilters={
                     <div className="d-flex flex-column flex-sm-row align-items-start align-items-sm-center mt-2 mt-sm-0">
                         <label htmlFor="departmentFilter" className="me-2 mb-1 mb-sm-0 small text-muted">Department:</label>
@@ -449,161 +480,234 @@ const ClearanceRequest: React.FC = () => {
                 </Modal.Header>
                 <Modal.Body>
                     <Form noValidate validated={validated} onSubmit={handleSubmit}>
-                        <Row className="mb-3">
-                            <Col md={4}>
-                                <Form.Group controlId="firstName">
-                                    <Form.Label>First Name <span className="text-danger">*</span></Form.Label>
-                                    <Form.Control
-                                        type="text"
-                                        name="first_name"
-                                        value={newRequest.first_name}
-                                        onChange={handleInputChange}
-                                        isInvalid={!!errors.first_name}
-                                        required
-                                    />
-                                    <Form.Control.Feedback type="invalid">
-                                        {errors.first_name}
-                                    </Form.Control.Feedback>
-                                </Form.Group>
-                            </Col>
-                            <Col md={4}>
-                                <Form.Group controlId="middleName">
-                                    <Form.Label>Middle Name</Form.Label>
-                                    <Form.Control
-                                        type="text"
-                                        name="middle_name"
-                                        value={newRequest.middle_name}
-                                        onChange={handleInputChange}
-                                    />
-                                </Form.Group>
-                            </Col>
-                            <Col md={4}>
-                                <Form.Group controlId="lastName">
-                                    <Form.Label>Last Name <span className="text-danger">*</span></Form.Label>
-                                    <Form.Control
-                                        type="text"
-                                        name="last_name"
-                                        value={newRequest.last_name}
-                                        onChange={handleInputChange}
-                                        isInvalid={!!errors.last_name}
-                                        required
-                                    />
-                                    <Form.Control.Feedback type="invalid">
-                                        {errors.last_name}
-                                    </Form.Control.Feedback>
-                                </Form.Group>
-                            </Col>
-                        </Row>
-                        <Row className="mb-3">
-                            <Col md={12}>
-                                <Form.Group controlId="email">
-                                    <Form.Label>Email <span className="text-danger">*</span></Form.Label>
-                                    <Form.Control
-                                        type="email"
-                                        name="email"
-                                        value={newRequest.email}
-                                        onChange={handleInputChange}
-                                        isInvalid={!!errors.email}
-                                        required
-                                    />
-                                    <Form.Control.Feedback type="invalid">
-                                        {errors.email}
-                                    </Form.Control.Feedback>
-                                </Form.Group>
-                            </Col>
-                        </Row>
-                        <Row className="mb-3">
-                            <Col md={12}>
-                                <Form.Group controlId="company">
-                                    <Form.Label>Company <span className="text-danger">*</span></Form.Label>
-                                    <Form.Select
-                                        name="company_id"
-                                        value={newRequest.company_id}
-                                        onChange={handleInputChange}
-                                        isInvalid={!!errors.company_id}
-                                        required
-                                    >
-                                        <option value="">Select Company</option>
-                                        {companies.map((company, idx) => (
-                                            <option key={`${company.company_id}-${idx}`} value={company.company_id}>
-                                                {company.company_name}
+                        {/* Section: Personal Information */}
+                        <div className="border rounded p-3 mb-3 bg-light">
+                            <h6 className="text-muted text-uppercase fw-semibold mb-3" style={{ fontSize: '0.75rem', letterSpacing: '0.05em' }}>
+                                Personal Information
+                            </h6>
+                            <Row className="mb-3">
+                                <Col md={4}>
+                                    <Form.Group controlId="firstName">
+                                        <Form.Label>First Name <span className="text-danger">*</span></Form.Label>
+                                        <Form.Control
+                                            type="text"
+                                            name="first_name"
+                                            value={newRequest.first_name}
+                                            onChange={handleInputChange}
+                                            isInvalid={!!errors.first_name}
+                                            placeholder="e.g. Juan"
+                                            required
+                                        />
+                                        <Form.Control.Feedback type="invalid">
+                                            {errors.first_name}
+                                        </Form.Control.Feedback>
+                                    </Form.Group>
+                                </Col>
+                                <Col md={4}>
+                                    <Form.Group controlId="middleName">
+                                        <Form.Label>Middle Name</Form.Label>
+                                        <Form.Control
+                                            type="text"
+                                            name="middle_name"
+                                            value={newRequest.middle_name}
+                                            onChange={handleInputChange}
+                                            placeholder="e.g. Santos"
+                                        />
+                                    </Form.Group>
+                                </Col>
+                                <Col md={4}>
+                                    <Form.Group controlId="lastName">
+                                        <Form.Label>Last Name <span className="text-danger">*</span></Form.Label>
+                                        <Form.Control
+                                            type="text"
+                                            name="last_name"
+                                            value={newRequest.last_name}
+                                            onChange={handleInputChange}
+                                            isInvalid={!!errors.last_name}
+                                            placeholder="e.g. Dela Cruz"
+                                            required
+                                        />
+                                        <Form.Control.Feedback type="invalid">
+                                            {errors.last_name}
+                                        </Form.Control.Feedback>
+                                    </Form.Group>
+                                </Col>
+                            </Row>
+                            <Row className="mb-0">
+                                <Col md={6}>
+                                    <Form.Group controlId="idNumber">
+                                        <Form.Label>ID Number</Form.Label>
+                                        <Form.Control
+                                            type="text"
+                                            name="id_number"
+                                            value={newRequest.id_number}
+                                            onChange={handleInputChange}
+                                            placeholder="e.g. EMP-00123"
+                                        />
+                                    </Form.Group>
+                                </Col>
+                                <Col md={6}>
+                                    <Form.Group controlId="email">
+                                        <Form.Label>Email <span className="text-danger">*</span></Form.Label>
+                                        <Form.Control
+                                            type="email"
+                                            name="email"
+                                            value={newRequest.email}
+                                            onChange={handleInputChange}
+                                            isInvalid={!!errors.email}
+                                            placeholder="e.g. juan@example.com"
+                                            required
+                                        />
+                                        <Form.Control.Feedback type="invalid">
+                                            {errors.email}
+                                        </Form.Control.Feedback>
+                                    </Form.Group>
+                                </Col>
+                            </Row>
+                        </div>
+
+                        {/* Section: Employment Details */}
+                        <div className="border rounded p-3 mb-3 bg-light">
+                            <h6 className="text-muted text-uppercase fw-semibold mb-3" style={{ fontSize: '0.75rem', letterSpacing: '0.05em' }}>
+                                Employment Details
+                            </h6>
+                            <Row className="mb-3">
+                                <Col md={6}>
+                                    <Form.Group controlId="position">
+                                        <Form.Label>Position</Form.Label>
+                                        <Form.Control
+                                            type="text"
+                                            name="position"
+                                            value={newRequest.position}
+                                            onChange={handleInputChange}
+                                            placeholder="e.g. Sales Associate"
+                                        />
+                                    </Form.Group>
+                                </Col>
+                                <Col md={6}>
+                                    <Form.Group controlId="immediateHead">
+                                        <Form.Label>Immediate Head</Form.Label>
+                                        <Form.Control
+                                            type="text"
+                                            name="immediate_head"
+                                            value={newRequest.immediate_head}
+                                            onChange={handleInputChange}
+                                            placeholder="e.g. Maria Reyes"
+                                        />
+                                    </Form.Group>
+                                </Col>
+                            </Row>
+                            <Row className="mb-0">
+                                <Col md={12}>
+                                    <Form.Group controlId="company">
+                                        <Form.Label>Company <span className="text-danger">*</span></Form.Label>
+                                        <Form.Select
+                                            name="company_id"
+                                            value={newRequest.company_id}
+                                            onChange={handleInputChange}
+                                            isInvalid={!!errors.company_id}
+                                            required
+                                        >
+                                            <option value="">Select Company</option>
+                                            {companies.map((company, idx) => (
+                                                <option key={`${company.company_id}-${idx}`} value={company.company_id}>
+                                                    {company.company_name}
+                                                </option>
+                                            ))}
+                                        </Form.Select>
+                                        <Form.Control.Feedback type="invalid">
+                                            {errors.company_id}
+                                        </Form.Control.Feedback>
+                                    </Form.Group>
+                                </Col>
+                            </Row>
+                            <Row className="mt-3 mb-0">
+                                <Col md={6}>
+                                    <Form.Group controlId="branch">
+                                        <Form.Label>Branch <span className="text-danger">*</span></Form.Label>
+                                        <Form.Select
+                                            name="branch_id"
+                                            value={newRequest.branch_id}
+                                            onChange={handleInputChange}
+                                            isInvalid={!!errors.branch_id}
+                                            required
+                                        >
+                                            <option value="">Select Branch</option>
+                                            {branches.map((branch, idx) => (
+                                                <option key={`${branch.branch_id}-${idx}`} value={branch.branch_id}>
+                                                    {branch.branch_name}
+                                                </option>
+                                            ))}
+                                        </Form.Select>
+                                        <Form.Control.Feedback type="invalid">
+                                            {errors.branch_id}
+                                        </Form.Control.Feedback>
+                                    </Form.Group>
+                                </Col>
+                                <Col md={6}>
+                                    <Form.Group controlId="department">
+                                        <Form.Label>Department <span className="text-danger">*</span></Form.Label>
+                                        <Form.Select
+                                            name="department_id"
+                                            value={newRequest.department_id}
+                                            onChange={handleInputChange}
+                                            isInvalid={!!errors.department_id}
+                                            required
+                                            disabled={!newRequest.company_id}
+                                        >
+                                            <option value="">
+                                                {newRequest.company_id ? "Select Department" : "Select Company First"}
                                             </option>
-                                        ))}
-                                    </Form.Select>
-                                    <Form.Control.Feedback type="invalid">
-                                        {errors.company_id}
-                                    </Form.Control.Feedback>
-                                </Form.Group>
-                            </Col>
-                        </Row>
-                        <Row className="mb-3">
-                            <Col md={6}>
-                                <Form.Group controlId="branch">
-                                    <Form.Label>Branch <span className="text-danger">*</span></Form.Label>
-                                    <Form.Select
-                                        name="branch_id"
-                                        value={newRequest.branch_id}
-                                        onChange={handleInputChange}
-                                        isInvalid={!!errors.branch_id}
-                                        required
-                                    >
-                                        <option value="">Select Branch</option>
-                                        {branches.map((branch, idx) => (
-                                            <option key={`${branch.branch_id}-${idx}`} value={branch.branch_id}>
-                                                {branch.branch_name}
-                                            </option>
-                                        ))}
-                                    </Form.Select>
-                                    <Form.Control.Feedback type="invalid">
-                                        {errors.branch_id}
-                                    </Form.Control.Feedback>
-                                </Form.Group>
-                            </Col>
-                            <Col md={6}>
-                                <Form.Group controlId="department">
-                                    <Form.Label>Department <span className="text-danger">*</span></Form.Label>
-                                    <Form.Select
-                                        name="department_id"
-                                        value={newRequest.department_id}
-                                        onChange={handleInputChange}
-                                        isInvalid={!!errors.department_id}
-                                        required
-                                        disabled={!newRequest.company_id}
-                                    >
-                                        <option value="">
-                                            {newRequest.company_id ? "Select Department" : "Select Company First"}
-                                        </option>
-                                        {departments.map((dept, idx) => (
-                                            <option key={`${dept.department_id}-${idx}`} value={dept.department_id}>
-                                                {dept.department_name}
-                                            </option>
-                                        ))}
-                                    </Form.Select>
-                                    <Form.Control.Feedback type="invalid">
-                                        {errors.department_id}
-                                    </Form.Control.Feedback>
-                                </Form.Group>
-                            </Col>
-                        </Row>
-                        <Row className="mb-3">
-                            <Col md={12}>
-                                <Form.Group controlId="purpose">
-                                    <Form.Label>Purpose of Clearance Request <span className="text-danger">*</span></Form.Label>
-                                    <Form.Control
-                                        type="text"
-                                        name="purpose"
-                                        value={newRequest.purpose}
-                                        onChange={handleInputChange}
-                                        placeholder="e.g., Resignation, Transfer, etc."
-                                        isInvalid={!!errors.purpose}
-                                        required
-                                    />
-                                    <Form.Control.Feedback type="invalid">
-                                        {errors.purpose}
-                                    </Form.Control.Feedback>
-                                </Form.Group>
-                            </Col>
-                        </Row>
+                                            {departments.map((dept, idx) => (
+                                                <option key={`${dept.department_id}-${idx}`} value={dept.department_id}>
+                                                    {dept.department_name}
+                                                </option>
+                                            ))}
+                                        </Form.Select>
+                                        <Form.Control.Feedback type="invalid">
+                                            {errors.department_id}
+                                        </Form.Control.Feedback>
+                                    </Form.Group>
+                                </Col>
+                            </Row>
+                        </div>
+
+                        {/* Section: Clearance Details */}
+                        <div className="border rounded p-3 mb-3 bg-light">
+                            <h6 className="text-muted text-uppercase fw-semibold mb-3" style={{ fontSize: '0.75rem', letterSpacing: '0.05em' }}>
+                                Clearance Details
+                            </h6>
+                            <Row className="mb-0">
+                                <Col md={8}>
+                                    <Form.Group controlId="purpose">
+                                        <Form.Label>Purpose of Clearance <span className="text-danger">*</span></Form.Label>
+                                        <Form.Control
+                                            type="text"
+                                            name="purpose"
+                                            value={newRequest.purpose}
+                                            onChange={handleInputChange}
+                                            placeholder="e.g. Resignation, Transfer, etc."
+                                            isInvalid={!!errors.purpose}
+                                            required
+                                        />
+                                        <Form.Control.Feedback type="invalid">
+                                            {errors.purpose}
+                                        </Form.Control.Feedback>
+                                    </Form.Group>
+                                </Col>
+                                <Col md={4}>
+                                    <Form.Group controlId="effectivityDate">
+                                        <Form.Label>Effectivity Date</Form.Label>
+                                        <Form.Control
+                                            type="date"
+                                            name="effectivity_date"
+                                            value={newRequest.effectivity_date}
+                                            onChange={handleInputChange}
+                                        />
+                                    </Form.Group>
+                                </Col>
+                            </Row>
+                        </div>
                         <Modal.Footer>
                             <Button variant="secondary" onClick={() => setShowModal(false)}>
                                 Cancel
@@ -617,78 +721,128 @@ const ClearanceRequest: React.FC = () => {
             </Modal>
             {/* Assign Template Modal */}
             <Modal show={showAssignModal} onHide={() => setShowAssignModal(false)} size="lg">
-                <Modal.Header closeButton className="py-2">
-                    <Modal.Title className="fs-5">Assign Clearance Template</Modal.Title>
+                <Modal.Header closeButton style={{ background: "linear-gradient(135deg, #1e3a5f 0%, #2563eb 100%)", borderBottom: "none" }}>
+                    <Modal.Title style={{ color: "#fff", fontWeight: 700, fontSize: "17px", display: "flex", alignItems: "center", gap: "8px" }}>
+                        <span>📋</span> Assign Clearance Template
+                    </Modal.Title>
                 </Modal.Header>
-                <Modal.Body className="p-3">
+                <Modal.Body style={{ background: "#f1f5f9", padding: "20px" }}>
                     {selectedRequest && (
                         <div>
-                            <h5 className="mb-3">Employee Details</h5>
-                            <ClearanceRequestDetails
-                                id={selectedRequest.id}
-                                company={selectedRequest.company_id}
-                                name={selectedRequest.name}
-                                email={selectedRequest.email}
-                                branch={selectedRequest.branch_id}
-                                department={selectedRequest.department_id}
-                                purpose={selectedRequest.purpose}
-                            />
-                            <hr />
-                            {filteredTemplates.length > 0 ? (
-                                <DynamicTable<TemplateData>
-                                    data={filteredTemplates}
-                                    columns={[
-                                        { dataField: "title", text: "Title", sortable: true },
-                                        { dataField: "purpose", text: "Purpose", sortable: true },
-                                        {
-                                            dataField: "template_id",
-                                            text: "Actions",
-                                            headerStyle: { width: '160px' },
-                                            formatter: (_cell: number, row: TemplateData) => (
-                                                <>
-                                                    <Button
-                                                        variant="primary"
-                                                        size="sm"
-                                                        onClick={() => handleViewTemplate(row)}
-                                                        className="ms-2"
-                                                    >
-                                                        View
-                                                    </Button>
-                                                    <Button
-                                                        variant="success"
-                                                        size="sm"
-                                                        onClick={() => handleAssignTemplate(row)}
-                                                        disabled={assigning}
-                                                        className="ms-2"
-                                                    >
-                                                        {assigning ? <Spinner animation="border" size="sm" /> : "Assign"}
-                                                    </Button>
-                                                </>
-                                            )
-                                        }
-                                    ]}
-                                    keyField="template_id"
-                                    striped
-                                    hover
-                                    responsive
-                                    title="Available Templates"
-                                    classes={{
-                                        table: 'table-sm',
-                                        header: 'py-2',
-                                        row: 'align-middle'
-                                    }}
-                                    style={{
-                                        cell: { padding: '0.4rem 0.6rem' }
-                                    }}
+                            {/* Employee Details Card */}
+                            <div style={{ marginBottom: "4px" }}>
+                                <div style={{ display: "flex", alignItems: "center", gap: "6px", marginBottom: "10px" }}>
+                                    <span style={{ fontSize: "15px" }}>👤</span>
+                                    <span style={{ fontWeight: 700, fontSize: "13px", color: "#475569", textTransform: "uppercase", letterSpacing: "0.05em" }}>Employee Details</span>
+                                </div>
+                                <ClearanceRequestDetails
+                                    idNumber={selectedRequest.id_number || "N/A"}
+                                    companyId={selectedRequest.company_id}
+                                    name={selectedRequest.name}
+                                    email={selectedRequest.email}
+                                    branch={selectedRequest.branch}
+                                    department={selectedRequest.department}
+                                    company={selectedRequest.company}
+                                    purpose={selectedRequest.purpose}
+                                    position={selectedRequest.position}
+                                    immediateHead={selectedRequest.immediate_head}
+                                    effectivityDate={selectedRequest.effectivity_date}
                                 />
+                            </div>
+
+                            {/* Divider */}
+                            <div style={{ display: "flex", alignItems: "center", gap: "10px", margin: "18px 0 14px" }}>
+                                <div style={{ flex: 1, height: "1px", background: "#e2e8f0" }} />
+                                <span style={{ fontSize: "12px", fontWeight: 600, color: "#94a3b8", textTransform: "uppercase", letterSpacing: "0.06em" }}>Available Templates</span>
+                                <div style={{ flex: 1, height: "1px", background: "#e2e8f0" }} />
+                            </div>
+
+                            {/* Templates */}
+                            {filteredTemplates.length > 0 ? (
+                                <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+                                    {filteredTemplates.map((tmpl) => (
+                                        <div key={tmpl.template_id} style={{
+                                            background: "#fff",
+                                            border: "1px solid #e2e8f0",
+                                            borderRadius: "12px",
+                                            padding: "14px 16px",
+                                            display: "flex",
+                                            alignItems: "center",
+                                            gap: "14px",
+                                            boxShadow: "0 1px 3px rgba(0,0,0,0.06)",
+                                            flexWrap: "wrap",
+                                        }}>
+                                            {/* Icon */}
+                                            <div style={{
+                                                width: "40px", height: "40px", borderRadius: "10px",
+                                                background: "linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%)",
+                                                display: "flex", alignItems: "center", justifyContent: "center",
+                                                fontSize: "20px", flexShrink: 0,
+                                            }}>📄</div>
+
+                                            {/* Info */}
+                                            <div style={{ flex: 1, minWidth: "140px" }}>
+                                                <div style={{ fontWeight: 700, fontSize: "14px", color: "#1e293b" }}>{tmpl.title}</div>
+                                                <div style={{ fontSize: "12px", color: "#64748b", marginTop: "4px", display: "flex", flexWrap: "wrap", gap: "6px", alignItems: "center" }}>
+                                                    <span style={{
+                                                        background: "#f0fdf4", color: "#15803d",
+                                                        border: "1px solid #bbf7d0", borderRadius: "6px",
+                                                        padding: "1px 8px", fontSize: "11px", fontWeight: 600,
+                                                    }}>{tmpl.purpose}</span>
+                                                    <span style={{
+                                                        background: "#eff6ff", color: "#1d4ed8",
+                                                        border: "1px solid #bfdbfe", borderRadius: "6px",
+                                                        padding: "1px 8px", fontSize: "11px", fontWeight: 600,
+                                                    }}>
+                                                        # {tmpl.template_id}
+                                                    </span>
+                                                    {tmpl.creator_employee && (
+                                                        <span style={{
+                                                            background: "#faf5ff", color: "#6d28d9",
+                                                            border: "1px solid #ddd6fe", borderRadius: "6px",
+                                                            padding: "1px 8px", fontSize: "11px", fontWeight: 600,
+                                                        }}>
+                                                            👤 {tmpl.creator_employee.first_name} {tmpl.creator_employee.last_name}
+                                                        </span>
+                                                    )}
+                                                </div>
+                                            </div>
+
+                                            {/* Actions */}
+                                            <div style={{ display: "flex", gap: "8px", flexShrink: 0 }}>
+                                                <Button
+                                                    variant="outline-primary"
+                                                    size="sm"
+                                                    onClick={() => handleViewTemplate(tmpl)}
+                                                    style={{ borderRadius: "8px", fontWeight: 600, fontSize: "12px", padding: "5px 14px" }}
+                                                >
+                                                    👁 Preview
+                                                </Button>
+                                                <Button
+                                                    variant="success"
+                                                    size="sm"
+                                                    onClick={() => handleAssignTemplate(tmpl)}
+                                                    disabled={assigning}
+                                                    style={{ borderRadius: "8px", fontWeight: 600, fontSize: "12px", padding: "5px 14px" }}
+                                                >
+                                                    {assigning ? <Spinner animation="border" size="sm" /> : "✅ Assign"}
+                                                </Button>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
                             ) : (
-                                <p>No templates available.</p>
+                                <div style={{ textAlign: "center", padding: "32px 16px", color: "#94a3b8", background: "#fff", borderRadius: "12px", border: "1px dashed #cbd5e1" }}>
+                                    <div style={{ fontSize: "32px", marginBottom: "8px" }}>📭</div>
+                                    <div style={{ fontSize: "14px", fontWeight: 500 }}>No templates available</div>
+                                    <div style={{ fontSize: "12px", marginTop: "4px" }}>Create a template first before assigning.</div>
+                                </div>
                             )}
                         </div>
                     )}
                 </Modal.Body>
-                <Modal.Footer>
-                    <Button variant="secondary" onClick={() => setShowAssignModal(false)}>
+                <Modal.Footer style={{ background: "#f8fafc", borderTop: "1px solid #e2e8f0" }}>
+                    <Button variant="outline-secondary" onClick={() => setShowAssignModal(false)} style={{ borderRadius: "8px" }}>
                         Close
                     </Button>
                 </Modal.Footer>
