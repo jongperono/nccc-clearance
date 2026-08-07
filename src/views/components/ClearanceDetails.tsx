@@ -28,6 +28,7 @@ const ClearanceDetails: React.FC<ClearanceDetailsProps> = ({
     const [remarksMap, setRemarksMap] = useState<Record<number, string>>({});
     const [currentEmployeeId, setCurrentEmployeeId] = useState<number | null>(null);
     const [approving, setApproving] = useState(false);
+    const [collapsedDepts, setCollapsedDepts] = useState<Record<string, boolean>>({});
     const { showAlert, AlertComponent } = useCustomAlert();
 
     // Signatory remark modal state
@@ -452,14 +453,19 @@ const ClearanceDetails: React.FC<ClearanceDetailsProps> = ({
                                                         borderRadius: "12px",
                                                         overflow: "hidden",
                                                     }}>
-                                                        {/* Department header */}
-                                                        <div style={{
-                                                            background: palette.header,
-                                                            padding: "10px 16px",
-                                                            display: "flex",
-                                                            alignItems: "center",
-                                                            gap: "8px",
-                                                        }}>
+                                                        {/* Department header — click to collapse/expand */}
+                                                        <div
+                                                            onClick={() => setCollapsedDepts(prev => ({ ...prev, [deptKey]: !prev[deptKey] }))}
+                                                            style={{
+                                                                background: palette.header,
+                                                                padding: "10px 16px",
+                                                                display: "flex",
+                                                                alignItems: "center",
+                                                                gap: "8px",
+                                                                cursor: "pointer",
+                                                                userSelect: "none",
+                                                            }}
+                                                        >
                                                             <span style={{ fontSize: "14px" }}>🗂️</span>
                                                             <span style={{ fontWeight: 700, fontSize: "13px", color: "#fff", letterSpacing: "0.04em", textTransform: "uppercase" }}>
                                                                 {deptKey}
@@ -475,181 +481,192 @@ const ClearanceDetails: React.FC<ClearanceDetailsProps> = ({
                                                             }}>
                                                                 {deptSignatories.length} {deptSignatories.length === 1 ? "signatory" : "signatories"}
                                                             </span>
+                                                            {/* Chevron indicator */}
+                                                            <span style={{
+                                                                marginLeft: "8px",
+                                                                fontSize: "12px",
+                                                                color: "rgba(255,255,255,0.8)",
+                                                                transition: "transform 0.2s",
+                                                                display: "inline-block",
+                                                                transform: collapsedDepts[deptKey] ? "rotate(-90deg)" : "rotate(0deg)",
+                                                            }}>▼</span>
                                                         </div>
 
-                                                        {/* Signatory rows */}
-                                                        <div style={{ background: "#fff" }}>
-                                                            {deptSignatories.map((sig, sIdx) => {
-                                                                const emp = sig.Employee || {};
-                                                                const name = emp.full_name
-                                                                    || [emp.first_name, emp.middle_name, emp.last_name].filter(Boolean).join(" ")
-                                                                    || "—";
-                                                                const role = emp.role_id || "—";
-                                                                const remarks = remarksMap[emp.employee_id] || sig.remarks || "No remarks";
-                                                                const status = typeof sig.status !== "undefined"
-                                                                    ? sig.status
-                                                                    : (sig.is_approved === true ? "Approved" : "Pending");
-                                                                const sv = getStatusVariant(status);
-                                                                const isLast = sIdx === deptSignatories.length - 1;
+                                                        {/* Signatory rows — hidden when collapsed */}
+                                                        {!collapsedDepts[deptKey] && (
+                                                            <div style={{ background: "#fff" }}>
+                                                                {deptSignatories.map((sig, sIdx) => {
+                                                                    const emp = sig.Employee || {};
+                                                                    const name = emp.full_name
+                                                                        || [emp.first_name, emp.middle_name, emp.last_name].filter(Boolean).join(" ")
+                                                                        || "—";
+                                                                    const role = emp.role_id || "—";
+                                                                    const remarks = remarksMap[emp.employee_id] || sig.remarks || "No remarks";
+                                                                    const status = typeof sig.status !== "undefined"
+                                                                        ? sig.status
+                                                                        : (sig.is_approved === true ? "Approved" : "Pending");
+                                                                    const sv = getStatusVariant(status);
+                                                                    const isLast = sIdx === deptSignatories.length - 1;
 
-                                                                return (
-                                                                    <div key={emp.employee_id ?? sIdx} style={{
-                                                                        display: "flex",
-                                                                        alignItems: "center",
-                                                                        gap: "12px",
-                                                                        padding: "12px 16px",
-                                                                        borderBottom: isLast ? "none" : "1px solid #f1f5f9",
-                                                                        flexWrap: "wrap",
-                                                                    }}>
-                                                                        {/* Avatar */}
-                                                                        <div style={{
-                                                                            width: "36px",
-                                                                            height: "36px",
-                                                                            borderRadius: "50%",
-                                                                            background: palette.light,
-                                                                            color: palette.accent,
+                                                                    return (
+                                                                        <div key={emp.employee_id ?? sIdx} style={{
                                                                             display: "flex",
                                                                             alignItems: "center",
-                                                                            justifyContent: "center",
-                                                                            fontWeight: 700,
-                                                                            fontSize: "14px",
-                                                                            flexShrink: 0,
+                                                                            gap: "12px",
+                                                                            padding: "12px 16px",
+                                                                            borderBottom: isLast ? "none" : "1px solid #f1f5f9",
+                                                                            flexWrap: "wrap",
                                                                         }}>
-                                                                            {name.charAt(0).toUpperCase()}
-                                                                        </div>
-
-                                                                        {/* Name + Role */}
-                                                                        <div style={{ flex: 1, minWidth: "120px" }}>
-                                                                            <div style={{ fontWeight: 600, fontSize: "14px", color: "#1e293b" }}>{name}</div>
-                                                                            <div style={{ fontSize: "11px", color: "#64748b", marginTop: "2px" }}>
-                                                                                <span style={{
-                                                                                    background: palette.light,
-                                                                                    color: palette.accent,
-                                                                                    borderRadius: "6px",
-                                                                                    padding: "1px 7px",
-                                                                                    fontWeight: 600,
-                                                                                    fontSize: "10px",
-                                                                                }}>
-                                                                                    {role}
-                                                                                </span>
-                                                                            </div>
-                                                                        </div>
-
-                                                                        {/* Remarks */}
-                                                                        <div style={{ flex: 2, minWidth: "100px", fontSize: "12px", color: "#475569" }}>
-                                                                            <div style={{ display: "flex", alignItems: "center", gap: "6px", marginBottom: "2px" }}>
-                                                                                <div style={{ fontSize: "9px", fontWeight: 700, color: "#94a3b8", textTransform: "uppercase", letterSpacing: "0.06em" }}>Remarks</div>
-                                                                                {currentEmployeeId === emp.employee_id && (clearance?.clearance_status || "").toLowerCase() !== "cleared" && (
-                                                                                    <button
-                                                                                        title="Add remark"
-                                                                                        onClick={() => {
-                                                                                            setRemarkTarget({ employeeId: emp.employee_id, name });
-                                                                                            setRemarkText("");
-                                                                                            setShowRemarkModal(true);
-                                                                                        }}
-                                                                                        style={{
-                                                                                            display: "inline-flex",
-                                                                                            alignItems: "center",
-                                                                                            justifyContent: "center",
-                                                                                            width: "18px",
-                                                                                            height: "18px",
-                                                                                            borderRadius: "50%",
-                                                                                            border: "1.5px solid #93c5fd",
-                                                                                            background: "#eff6ff",
-                                                                                            color: "#2563eb",
-                                                                                            fontSize: "13px",
-                                                                                            fontWeight: 700,
-                                                                                            cursor: "pointer",
-                                                                                            lineHeight: 1,
-                                                                                            padding: 0,
-                                                                                            transition: "all 0.15s",
-                                                                                        }}
-                                                                                        onMouseEnter={(e) => {
-                                                                                            (e.currentTarget as HTMLButtonElement).style.background = "#2563eb";
-                                                                                            (e.currentTarget as HTMLButtonElement).style.color = "#fff";
-                                                                                        }}
-                                                                                        onMouseLeave={(e) => {
-                                                                                            (e.currentTarget as HTMLButtonElement).style.background = "#eff6ff";
-                                                                                            (e.currentTarget as HTMLButtonElement).style.color = "#2563eb";
-                                                                                        }}
-                                                                                    >
-                                                                                        +
-                                                                                    </button>
-                                                                                )}
-                                                                            </div>
+                                                                            {/* Avatar */}
                                                                             <div style={{
-                                                                                color: remarks === "No remarks" ? "#cbd5e1" : "#334155",
-                                                                                fontStyle: remarks === "No remarks" ? "italic" : "normal",
-                                                                            }}>{remarks}</div>
-                                                                        </div>
+                                                                                width: "36px",
+                                                                                height: "36px",
+                                                                                borderRadius: "50%",
+                                                                                background: palette.light,
+                                                                                color: palette.accent,
+                                                                                display: "flex",
+                                                                                alignItems: "center",
+                                                                                justifyContent: "center",
+                                                                                fontWeight: 700,
+                                                                                fontSize: "14px",
+                                                                                flexShrink: 0,
+                                                                            }}>
+                                                                                {name.charAt(0).toUpperCase()}
+                                                                            </div>
 
-                                                                        {/* Status badge */}
-                                                                        <div style={{
-                                                                            background: sv.bg,
-                                                                            color: sv.color,
-                                                                            border: `1px solid ${sv.border}`,
-                                                                            borderRadius: "20px",
-                                                                            padding: "3px 12px",
-                                                                            fontSize: "11px",
-                                                                            fontWeight: 700,
-                                                                            textTransform: "uppercase",
-                                                                            letterSpacing: "0.06em",
-                                                                            whiteSpace: "nowrap",
-                                                                        }}>
-                                                                            {status}
-                                                                        </div>
-
-                                                                        {/* Approve button — only show for the current user's row */}
-                                                                        {currentEmployeeId === (emp.employee_id ?? null) && (
-                                                                            sig.is_approved === true ? (
-                                                                                <div style={{
-                                                                                    display: "flex",
-                                                                                    alignItems: "center",
-                                                                                    gap: "5px",
-                                                                                    background: "#d1fae5",
-                                                                                    color: "#065f46",
-                                                                                    border: "1px solid #6ee7b7",
-                                                                                    borderRadius: "20px",
-                                                                                    padding: "3px 12px",
-                                                                                    fontSize: "11px",
-                                                                                    fontWeight: 700,
-                                                                                    whiteSpace: "nowrap",
-                                                                                }}>
-                                                                                    ✅ You approved
+                                                                            {/* Name + Role */}
+                                                                            <div style={{ flex: 1, minWidth: "120px" }}>
+                                                                                <div style={{ fontWeight: 600, fontSize: "14px", color: "#1e293b" }}>{name}</div>
+                                                                                <div style={{ fontSize: "11px", color: "#64748b", marginTop: "2px" }}>
+                                                                                    <span style={{
+                                                                                        background: palette.light,
+                                                                                        color: palette.accent,
+                                                                                        borderRadius: "6px",
+                                                                                        padding: "1px 7px",
+                                                                                        fontWeight: 600,
+                                                                                        fontSize: "10px",
+                                                                                    }}>
+                                                                                        {role}
+                                                                                    </span>
                                                                                 </div>
-                                                                            ) : (
-                                                                                <button
-                                                                                    onClick={handleApprove}
-                                                                                    disabled={approving}
-                                                                                    style={{
+                                                                            </div>
+
+                                                                            {/* Remarks */}
+                                                                            <div style={{ flex: 2, minWidth: "100px", fontSize: "12px", color: "#475569" }}>
+                                                                                <div style={{ display: "flex", alignItems: "center", gap: "6px", marginBottom: "2px" }}>
+                                                                                    <div style={{ fontSize: "9px", fontWeight: 700, color: "#94a3b8", textTransform: "uppercase", letterSpacing: "0.06em" }}>Remarks</div>
+                                                                                    {currentEmployeeId === emp.employee_id && (clearance?.clearance_status || "").toLowerCase() !== "cleared" && (
+                                                                                        <button
+                                                                                            title="Add remark"
+                                                                                            onClick={() => {
+                                                                                                setRemarkTarget({ employeeId: emp.employee_id, name });
+                                                                                                setRemarkText("");
+                                                                                                setShowRemarkModal(true);
+                                                                                            }}
+                                                                                            style={{
+                                                                                                display: "inline-flex",
+                                                                                                alignItems: "center",
+                                                                                                justifyContent: "center",
+                                                                                                width: "18px",
+                                                                                                height: "18px",
+                                                                                                borderRadius: "50%",
+                                                                                                border: "1.5px solid #93c5fd",
+                                                                                                background: "#eff6ff",
+                                                                                                color: "#2563eb",
+                                                                                                fontSize: "13px",
+                                                                                                fontWeight: 700,
+                                                                                                cursor: "pointer",
+                                                                                                lineHeight: 1,
+                                                                                                padding: 0,
+                                                                                                transition: "all 0.15s",
+                                                                                            }}
+                                                                                            onMouseEnter={(e) => {
+                                                                                                (e.currentTarget as HTMLButtonElement).style.background = "#2563eb";
+                                                                                                (e.currentTarget as HTMLButtonElement).style.color = "#fff";
+                                                                                            }}
+                                                                                            onMouseLeave={(e) => {
+                                                                                                (e.currentTarget as HTMLButtonElement).style.background = "#eff6ff";
+                                                                                                (e.currentTarget as HTMLButtonElement).style.color = "#2563eb";
+                                                                                            }}
+                                                                                        >
+                                                                                            +
+                                                                                        </button>
+                                                                                    )}
+                                                                                </div>
+                                                                                <div style={{
+                                                                                    color: remarks === "No remarks" ? "#cbd5e1" : "#334155",
+                                                                                    fontStyle: remarks === "No remarks" ? "italic" : "normal",
+                                                                                }}>{remarks}</div>
+                                                                            </div>
+
+                                                                            {/* Status badge */}
+                                                                            <div style={{
+                                                                                background: sv.bg,
+                                                                                color: sv.color,
+                                                                                border: `1px solid ${sv.border}`,
+                                                                                borderRadius: "20px",
+                                                                                padding: "3px 12px",
+                                                                                fontSize: "11px",
+                                                                                fontWeight: 700,
+                                                                                textTransform: "uppercase",
+                                                                                letterSpacing: "0.06em",
+                                                                                whiteSpace: "nowrap",
+                                                                            }}>
+                                                                                {status}
+                                                                            </div>
+
+                                                                            {/* Approve button — only show for the current user's row */}
+                                                                            {currentEmployeeId === (emp.employee_id ?? null) && (
+                                                                                sig.is_approved === true ? (
+                                                                                    <div style={{
                                                                                         display: "flex",
                                                                                         alignItems: "center",
                                                                                         gap: "5px",
-                                                                                        background: approving ? "#93c5fd" : "linear-gradient(135deg, #1d4ed8, #2563eb)",
-                                                                                        color: "#fff",
-                                                                                        border: "none",
+                                                                                        background: "#d1fae5",
+                                                                                        color: "#065f46",
+                                                                                        border: "1px solid #6ee7b7",
                                                                                         borderRadius: "20px",
-                                                                                        padding: "5px 14px",
-                                                                                        fontSize: "12px",
+                                                                                        padding: "3px 12px",
+                                                                                        fontSize: "11px",
                                                                                         fontWeight: 700,
-                                                                                        cursor: approving ? "not-allowed" : "pointer",
                                                                                         whiteSpace: "nowrap",
-                                                                                        boxShadow: "0 2px 6px rgba(37,99,235,0.35)",
-                                                                                        transition: "opacity 0.15s",
-                                                                                    }}
-                                                                                >
-                                                                                    {approving ? (
-                                                                                        <><Spinner as="span" animation="border" size="sm" style={{ width: "12px", height: "12px" }} /> Approving...</>
-                                                                                    ) : (
-                                                                                        <>✍️ Approve</>
-                                                                                    )}
-                                                                                </button>
-                                                                            )
-                                                                        )}
-                                                                    </div>
-                                                                );
-                                                            })}
-                                                        </div>
+                                                                                    }}>
+                                                                                        ✅ You approved
+                                                                                    </div>
+                                                                                ) : (
+                                                                                    <button
+                                                                                        onClick={handleApprove}
+                                                                                        disabled={approving}
+                                                                                        style={{
+                                                                                            display: "flex",
+                                                                                            alignItems: "center",
+                                                                                            gap: "5px",
+                                                                                            background: approving ? "#93c5fd" : "linear-gradient(135deg, #1d4ed8, #2563eb)",
+                                                                                            color: "#fff",
+                                                                                            border: "none",
+                                                                                            borderRadius: "20px",
+                                                                                            padding: "5px 14px",
+                                                                                            fontSize: "12px",
+                                                                                            fontWeight: 700,
+                                                                                            cursor: approving ? "not-allowed" : "pointer",
+                                                                                            whiteSpace: "nowrap",
+                                                                                            boxShadow: "0 2px 6px rgba(37,99,235,0.35)",
+                                                                                            transition: "opacity 0.15s",
+                                                                                        }}
+                                                                                    >
+                                                                                        {approving ? (
+                                                                                            <><Spinner as="span" animation="border" size="sm" style={{ width: "12px", height: "12px" }} /> Approving...</>
+                                                                                        ) : (
+                                                                                            <>✍️ Approve</>
+                                                                                        )}
+                                                                                    </button>
+                                                                                )
+                                                                            )}
+                                                                        </div>
+                                                                    );
+                                                                })}
+                                                            </div>
+                                                        )}
                                                     </div>
                                                 );
                                             })}
