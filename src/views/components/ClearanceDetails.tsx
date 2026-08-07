@@ -486,17 +486,65 @@ const ClearanceDetails: React.FC<ClearanceDetailsProps> = ({
                                                             <span style={{ fontWeight: 700, fontSize: "13px", color: "#fff", letterSpacing: "0.04em", textTransform: "uppercase" }}>
                                                                 {deptKey}
                                                             </span>
-                                                            <span style={{
-                                                                marginLeft: "auto",
-                                                                background: "rgba(255,255,255,0.2)",
-                                                                color: "#fff",
-                                                                borderRadius: "20px",
-                                                                padding: "1px 10px",
-                                                                fontSize: "11px",
-                                                                fontWeight: 600,
-                                                            }}>
-                                                                {deptSignatories.length} {deptSignatories.length === 1 ? "signatory" : "signatories"}
-                                                            </span>
+                                                            {/* Approved / Total — progress widget */}
+                                                            <div style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: "6px" }}>
+                                                                {(() => {
+                                                                    const approvedCount = deptSignatories.filter(s =>
+                                                                        s.is_approved === true ||
+                                                                        (typeof s.status === "string" && s.status.toLowerCase() === "approved")
+                                                                    ).length;
+                                                                    const total = deptSignatories.length;
+                                                                    const pct = total > 0 ? Math.round((approvedCount / total) * 100) : 0;
+                                                                    const allApproved = approvedCount === total;
+                                                                    const noneApproved = approvedCount === 0;
+                                                                    const barColor = allApproved ? "#34d399" : noneApproved ? "#fbbf24" : "#60a5fa";
+                                                                    const statusLabel = allApproved ? "All Cleared" : noneApproved ? "Awaiting" : "In Progress";
+                                                                    const statusIcon = allApproved ? "✅" : noneApproved ? "🕐" : "⏳";
+                                                                    return (
+                                                                        <div style={{
+                                                                            display: "flex",
+                                                                            alignItems: "center",
+                                                                            gap: "10px",
+                                                                            background: "rgba(0,0,0,0.18)",
+                                                                            borderRadius: "20px",
+                                                                            padding: "5px 12px 5px 10px",
+                                                                            border: "1px solid rgba(255,255,255,0.12)",
+                                                                        }}>
+                                                                            {/* Fraction */}
+                                                                            <div style={{ display: "flex", alignItems: "baseline", gap: "2px" }}>
+                                                                                <span style={{ fontSize: "15px", fontWeight: 800, color: barColor, lineHeight: 1 }}>{approvedCount}</span>
+                                                                                <span style={{ fontSize: "11px", color: "rgba(255,255,255,0.5)", fontWeight: 500 }}>/{total}</span>
+                                                                            </div>
+                                                                            {/* Progress bar */}
+                                                                            <div style={{
+                                                                                width: "60px",
+                                                                                height: "5px",
+                                                                                borderRadius: "99px",
+                                                                                background: "rgba(255,255,255,0.15)",
+                                                                                overflow: "hidden",
+                                                                            }}>
+                                                                                <div style={{
+                                                                                    width: `${pct}%`,
+                                                                                    height: "100%",
+                                                                                    borderRadius: "99px",
+                                                                                    background: barColor,
+                                                                                    transition: "width 0.4s ease",
+                                                                                }} />
+                                                                            </div>
+                                                                            {/* Status label */}
+                                                                            <span style={{
+                                                                                fontSize: "10px",
+                                                                                fontWeight: 700,
+                                                                                color: barColor,
+                                                                                letterSpacing: "0.04em",
+                                                                                whiteSpace: "nowrap",
+                                                                            }}>
+                                                                                {statusIcon} {statusLabel}
+                                                                            </span>
+                                                                        </div>
+                                                                    );
+                                                                })()}
+                                                            </div>
                                                             {/* Chevron indicator */}
                                                             <span style={{
                                                                 marginLeft: "8px",
