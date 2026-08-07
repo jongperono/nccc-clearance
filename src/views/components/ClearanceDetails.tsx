@@ -413,7 +413,19 @@ const ClearanceDetails: React.FC<ClearanceDetailsProps> = ({
                                         return acc;
                                     }, {});
 
-                                    const sortedDepts = Object.keys(grouped).sort((a, b) => a.localeCompare(b));
+                                    // Find the department of the logged-in user
+                                    const myDeptKey = currentEmployeeId
+                                        ? signatories.find((s: any) => (s.Employee?.employee_id ?? s.signatory_id) === currentEmployeeId)?.Employee?.department_id ?? null
+                                        : null;
+
+                                    // Sort departments alphabetically, but put the login user's department first
+                                    const sortedDepts = Object.keys(grouped).sort((a, b) => {
+                                        if (myDeptKey !== null) {
+                                            if (a === String(myDeptKey)) return -1;
+                                            if (b === String(myDeptKey)) return 1;
+                                        }
+                                        return a.localeCompare(b);
+                                    });
 
                                     const deptColors = [
                                         { header: "#1e3a5f", light: "#e0f2fe", accent: "#0369a1" },
