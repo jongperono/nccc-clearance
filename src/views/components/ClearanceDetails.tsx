@@ -111,6 +111,22 @@ const ClearanceDetails: React.FC<ClearanceDetailsProps> = ({
         fetchSignatories();
     }, [showAddModal]);
 
+    // Initialize collapsed state: collapse all depts except the login user's own
+    useEffect(() => {
+        if (signatories.length === 0) return;
+        const myDept = currentEmployeeId
+            ? signatories.find((s: any) => (s.Employee?.employee_id ?? s.signatory_id) === currentEmployeeId)?.Employee?.department_id ?? null
+            : null;
+        const initial: Record<string, boolean> = {};
+        signatories.forEach((s: any) => {
+            const deptKey = String(s.Employee?.department_id || "—");
+            if (!(deptKey in initial)) {
+                initial[deptKey] = myDept !== null ? String(myDept) !== deptKey : false;
+            }
+        });
+        setCollapsedDepts(initial);
+    }, [signatories, currentEmployeeId]);
+
     const getStatusVariant = (status: string) => {
         const s = (status || "").toLowerCase();
         if (s === "approved" || s === "cleared") return { bg: "#d1fae5", color: "#065f46", border: "#6ee7b7" };
