@@ -54,9 +54,115 @@ const ClearanceDetails: React.FC<ClearanceDetailsProps> = ({
                 <title>Clearance – ${clearance?.tracking_id || ""}</title>
                 <style>
                     ${styles}
-                    @page { size: A4 portrait; margin: 1.5cm; }
-                    body { background: #fff !important; font-family: sans-serif; }
+                    @page { size: A4 portrait; margin: 1cm 1.2cm; }
+                    body { background: #fff !important; font-family: sans-serif; font-size: 11px; }
                     .no-print { display: none !important; }
+
+                    /* ── Header Banner ── */
+                    [data-print="header"] {
+                        padding: 8px 14px 14px !important;
+                    }
+                    [data-print="header"] img {
+                        width: 48px !important;
+                    }
+                    [data-print="header"] [data-print="title"] {
+                        font-size: 15px !important;
+                    }
+                    [data-print="header"] [data-print="subtitle"] {
+                        font-size: 9px !important;
+                    }
+                    [data-print="header"] [data-print="date"] {
+                        font-size: 9px !important;
+                    }
+
+                    /* ── Cards Container ── */
+                    [data-print="cards"] {
+                        padding: 10px 0 0 !important;
+                        margin-top: -8px !important;
+                    }
+
+                    /* ── Each Card ── */
+                    [data-print="card"] {
+                        padding: 10px 12px !important;
+                        margin-bottom: 8px !important;
+                        border-radius: 8px !important;
+                        box-shadow: none !important;
+                        border: 1px solid #e2e8f0 !important;
+                    }
+                    [data-print="card-header"] {
+                        margin-bottom: 8px !important;
+                        padding-bottom: 6px !important;
+                    }
+                    [data-print="card-header"] span:first-child {
+                        font-size: 13px !important;
+                    }
+                    [data-print="card-header"] span:last-child {
+                        font-size: 12px !important;
+                    }
+
+                    /* ── InfoField ── */
+                    [data-print="info-field"] {
+                        padding: 5px 8px !important;
+                        margin-bottom: 5px !important;
+                        border-radius: 6px !important;
+                        gap: 6px !important;
+                    }
+                    [data-print="info-field"] [data-print="info-label"] {
+                        font-size: 8px !important;
+                        margin-bottom: 1px !important;
+                    }
+                    [data-print="info-field"] [data-print="info-value"] {
+                        font-size: 11px !important;
+                    }
+                    [data-print="info-field"] [data-print="info-icon"] {
+                        font-size: 11px !important;
+                        min-width: 14px !important;
+                    }
+
+                    /* ── Signatory rows ── */
+                    [data-print="sig-row"] {
+                        padding: 6px 10px !important;
+                        gap: 8px !important;
+                    }
+                    [data-print="sig-avatar"] {
+                        width: 26px !important;
+                        height: 26px !important;
+                        font-size: 11px !important;
+                    }
+                    [data-print="sig-name"] {
+                        font-size: 11px !important;
+                    }
+                    [data-print="sig-role"] {
+                        font-size: 9px !important;
+                    }
+                    [data-print="sig-remarks-label"] {
+                        font-size: 8px !important;
+                    }
+                    [data-print="sig-remarks-text"] {
+                        font-size: 10px !important;
+                    }
+                    [data-print="sig-status"] {
+                        font-size: 9px !important;
+                        padding: 2px 8px !important;
+                    }
+
+                    /* ── Dept header ── */
+                    [data-print="dept-header"] {
+                        padding: 6px 10px 5px !important;
+                    }
+                    [data-print="dept-name"] {
+                        font-size: 11px !important;
+                    }
+                    [data-print="dept-pill"] {
+                        font-size: 9px !important;
+                        padding: 1px 7px !important;
+                    }
+
+                    /* Hide interactive / screen-only elements */
+                    button, [data-print="no-print"] { display: none !important; }
+                    [data-print="approve-btn"] { display: none !important; }
+                    [data-print="add-remark-btn"] { display: none !important; }
+                    [data-print="chevron"] { display: none !important; }
                 </style>
             </head>
             <body>${content.innerHTML}</body>
@@ -209,7 +315,7 @@ const ClearanceDetails: React.FC<ClearanceDetailsProps> = ({
         : "";
 
     const InfoField = ({ icon, label, value }: { icon: string; label: string; value: string }) => (
-        <div style={{
+        <div data-print="info-field" style={{
             display: "flex",
             alignItems: "flex-start",
             gap: "10px",
@@ -219,10 +325,10 @@ const ClearanceDetails: React.FC<ClearanceDetailsProps> = ({
             border: "1px solid #e2e8f0",
             marginBottom: "8px",
         }}>
-            <span style={{ fontSize: "16px", minWidth: "20px", marginTop: "1px" }}>{icon}</span>
+            <span data-print="info-icon" style={{ fontSize: "16px", minWidth: "20px", marginTop: "1px" }}>{icon}</span>
             <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ fontSize: "10px", fontWeight: 600, color: "#94a3b8", textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: "2px" }}>{label}</div>
-                <div style={{ fontSize: "14px", fontWeight: 500, color: "#1e293b", wordBreak: "break-word" }}>{value}</div>
+                <div data-print="info-label" style={{ fontSize: "10px", fontWeight: 600, color: "#94a3b8", textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: "2px" }}>{label}</div>
+                <div data-print="info-value" style={{ fontSize: "14px", fontWeight: 500, color: "#1e293b", wordBreak: "break-word" }}>{value}</div>
             </div>
         </div>
     );
@@ -262,7 +368,7 @@ const ClearanceDetails: React.FC<ClearanceDetailsProps> = ({
                         {/* Printable content wrapper */}
                         <div ref={printRef}>
                             {/* Header Banner */}
-                            <div style={{
+                            <div data-print="header" style={{
                                 background: "linear-gradient(135deg, #1e3a5f 0%, #2563eb 100%)",
                                 padding: "16px 24px 28px",
                                 display: "flex",
@@ -272,9 +378,9 @@ const ClearanceDetails: React.FC<ClearanceDetailsProps> = ({
                             }}>
                                 <img src={ncccLogo} alt="NCCC Logo" style={{ width: "70px", filter: "brightness(0) invert(1)", opacity: 0.9 }} />
                                 <div style={{ textAlign: "center", flex: 1 }}>
-                                    <div style={{ color: "rgba(255,255,255,0.75)", fontSize: "11px", letterSpacing: "0.12em", textTransform: "uppercase", marginBottom: "4px" }}>Official Document</div>
-                                    <div style={{ color: "#fff", fontSize: "22px", fontWeight: 700, letterSpacing: "0.01em" }}>Employee Clearance</div>
-                                    <div style={{ color: "rgba(255,255,255,0.65)", fontSize: "12px", marginTop: "4px" }}>
+                                    <div data-print="subtitle" style={{ color: "rgba(255,255,255,0.75)", fontSize: "11px", letterSpacing: "0.12em", textTransform: "uppercase", marginBottom: "4px" }}>Official Document</div>
+                                    <div data-print="title" style={{ color: "#fff", fontSize: "22px", fontWeight: 700, letterSpacing: "0.01em" }}>Employee Clearance</div>
+                                    <div data-print="date" style={{ color: "rgba(255,255,255,0.65)", fontSize: "12px", marginTop: "4px" }}>
                                         {clearance.createdAt ? new Date(clearance.createdAt).toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" }) : "-"}
                                     </div>
                                 </div>
@@ -301,17 +407,17 @@ const ClearanceDetails: React.FC<ClearanceDetailsProps> = ({
                             </div>
 
                             {/* Cards Container */}
-                            <div style={{ padding: "20px", marginTop: "-12px" }}>
+                            <div data-print="cards" style={{ padding: "20px", marginTop: "-12px" }}>
 
                                 {/* Employee Information Card */}
-                                <div style={{
+                                <div data-print="card" style={{
                                     background: "#fff",
                                     borderRadius: "14px",
                                     boxShadow: "0 1px 4px rgba(0,0,0,0.08), 0 4px 16px rgba(0,0,0,0.06)",
                                     padding: "20px",
                                     marginBottom: "16px",
                                 }}>
-                                    <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "16px", paddingBottom: "12px", borderBottom: "1px solid #e2e8f0" }}>
+                                    <div data-print="card-header" style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "16px", paddingBottom: "12px", borderBottom: "1px solid #e2e8f0" }}>
                                         <span style={{ fontSize: "18px" }}>👤</span>
                                         <span style={{ fontWeight: 700, fontSize: "15px", color: "#1e293b" }}>Employee Information</span>
                                     </div>
@@ -338,14 +444,14 @@ const ClearanceDetails: React.FC<ClearanceDetailsProps> = ({
                                 </div>
 
                                 {/* Organization Information Card */}
-                                <div style={{
+                                <div data-print="card" style={{
                                     background: "#fff",
                                     borderRadius: "14px",
                                     boxShadow: "0 1px 4px rgba(0,0,0,0.08), 0 4px 16px rgba(0,0,0,0.06)",
                                     padding: "20px",
                                     marginBottom: "16px",
                                 }}>
-                                    <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "16px", paddingBottom: "12px", borderBottom: "1px solid #e2e8f0" }}>
+                                    <div data-print="card-header" style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "16px", paddingBottom: "12px", borderBottom: "1px solid #e2e8f0" }}>
                                         <span style={{ fontSize: "18px" }}>🏢</span>
                                         <span style={{ fontWeight: 700, fontSize: "15px", color: "#1e293b" }}>Organization Details</span>
                                     </div>
@@ -363,14 +469,14 @@ const ClearanceDetails: React.FC<ClearanceDetailsProps> = ({
                                 </div>
 
                                 {/* Clearance Meta Card */}
-                                <div style={{
+                                <div data-print="card" style={{
                                     background: "#fff",
                                     borderRadius: "14px",
                                     boxShadow: "0 1px 4px rgba(0,0,0,0.08), 0 4px 16px rgba(0,0,0,0.06)",
                                     padding: "20px",
                                     marginBottom: "16px",
                                 }}>
-                                    <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "16px", paddingBottom: "12px", borderBottom: "1px solid #e2e8f0" }}>
+                                    <div data-print="card-header" style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "16px", paddingBottom: "12px", borderBottom: "1px solid #e2e8f0" }}>
                                         <span style={{ fontSize: "18px" }}>📅</span>
                                         <span style={{ fontWeight: 700, fontSize: "15px", color: "#1e293b" }}>Clearance Information</span>
                                     </div>
@@ -426,7 +532,7 @@ const ClearanceDetails: React.FC<ClearanceDetailsProps> = ({
                                     </div>
                                 </div>
                                 {/* Signatories Card */}
-                                <div style={{
+                                <div data-print="card" style={{
                                     background: "#fff",
                                     borderRadius: "14px",
                                     boxShadow: "0 1px 4px rgba(0,0,0,0.08), 0 4px 16px rgba(0,0,0,0.06)",
@@ -524,14 +630,14 @@ const ClearanceDetails: React.FC<ClearanceDetailsProps> = ({
                                                                     return (
                                                                         <>
                                                                             {/* Main row */}
-                                                                            <div style={{ display: "flex", alignItems: "center", gap: "10px", padding: "10px 14px 8px" }}>
+                                                                            <div data-print="dept-header" style={{ display: "flex", alignItems: "center", gap: "10px", padding: "10px 14px 8px" }}>
                                                                                 {/* Left accent dot */}
                                                                                 <span style={{
                                                                                     width: "8px", height: "8px", borderRadius: "50%",
                                                                                     background: barColor, flexShrink: 0,
                                                                                 }} />
                                                                                 {/* Dept name */}
-                                                                                <span style={{
+                                                                                <span data-print="dept-name" style={{
                                                                                     fontWeight: 700, fontSize: "13px", color: "#1e293b",
                                                                                     letterSpacing: "0.03em", textTransform: "uppercase",
                                                                                     flex: 1, minWidth: 0, overflow: "hidden",
@@ -548,7 +654,7 @@ const ClearanceDetails: React.FC<ClearanceDetailsProps> = ({
                                                                                     )}
                                                                                 </span>
                                                                                 {/* Count pill */}
-                                                                                <span style={{
+                                                                                <span data-print="dept-pill" style={{
                                                                                     fontSize: "11px", fontWeight: 700,
                                                                                     color: pillColor, background: pillBg,
                                                                                     borderRadius: "20px", padding: "2px 10px",
@@ -557,7 +663,7 @@ const ClearanceDetails: React.FC<ClearanceDetailsProps> = ({
                                                                                     {approvedCount}/{total} approved
                                                                                 </span>
                                                                                 {/* Chevron */}
-                                                                                <span style={{
+                                                                                <span data-print="chevron" style={{
                                                                                     fontSize: "11px", color: "#94a3b8",
                                                                                     display: "inline-block", transition: "transform 0.2s",
                                                                                     transform: collapsedDepts[deptKey] ? "rotate(-90deg)" : "rotate(0deg)",
@@ -594,7 +700,7 @@ const ClearanceDetails: React.FC<ClearanceDetailsProps> = ({
                                                                         const isLast = sIdx === deptSignatories.length - 1;
 
                                                                         return (
-                                                                            <div key={emp.employee_id ?? sIdx} style={{
+                                                                            <div key={emp.employee_id ?? sIdx} data-print="sig-row" style={{
                                                                                 display: "flex",
                                                                                 alignItems: "center",
                                                                                 gap: "12px",
@@ -603,7 +709,7 @@ const ClearanceDetails: React.FC<ClearanceDetailsProps> = ({
                                                                                 flexWrap: "wrap",
                                                                             }}>
                                                                                 {/* Avatar */}
-                                                                                <div style={{
+                                                                                <div data-print="sig-avatar" style={{
                                                                                     width: "36px",
                                                                                     height: "36px",
                                                                                     borderRadius: "50%",
@@ -621,9 +727,9 @@ const ClearanceDetails: React.FC<ClearanceDetailsProps> = ({
 
                                                                                 {/* Name + Role */}
                                                                                 <div style={{ flex: 1, minWidth: "120px" }}>
-                                                                                    <div style={{ fontWeight: 600, fontSize: "14px", color: "#1e293b" }}>{name}</div>
+                                                                                    <div data-print="sig-name" style={{ fontWeight: 600, fontSize: "14px", color: "#1e293b" }}>{name}</div>
                                                                                     <div style={{ fontSize: "11px", color: "#64748b", marginTop: "2px" }}>
-                                                                                        <span style={{
+                                                                                        <span data-print="sig-role" style={{
                                                                                             background: "#e2e8f0",
                                                                                             color: "#475569",
                                                                                             borderRadius: "6px",
@@ -639,9 +745,10 @@ const ClearanceDetails: React.FC<ClearanceDetailsProps> = ({
                                                                                 {/* Remarks */}
                                                                                 <div style={{ flex: 2, minWidth: "100px", fontSize: "12px", color: "#475569" }}>
                                                                                     <div style={{ display: "flex", alignItems: "center", gap: "6px", marginBottom: "2px" }}>
-                                                                                        <div style={{ fontSize: "9px", fontWeight: 700, color: "#94a3b8", textTransform: "uppercase", letterSpacing: "0.06em" }}>Remarks</div>
+                                                                                        <div data-print="sig-remarks-label" style={{ fontSize: "9px", fontWeight: 700, color: "#94a3b8", textTransform: "uppercase", letterSpacing: "0.06em" }}>Remarks</div>
                                                                                         {currentEmployeeId === emp.employee_id && (clearance?.clearance_status || "").toLowerCase() !== "cleared" && (
                                                                                             <button
+                                                                                                data-print="add-remark-btn"
                                                                                                 title="Add remark"
                                                                                                 onClick={() => {
                                                                                                     setRemarkTarget({ employeeId: emp.employee_id, name });
@@ -678,14 +785,14 @@ const ClearanceDetails: React.FC<ClearanceDetailsProps> = ({
                                                                                             </button>
                                                                                         )}
                                                                                     </div>
-                                                                                    <div style={{
+                                                                                    <div data-print="sig-remarks-text" style={{
                                                                                         color: remarks === "No remarks" ? "#cbd5e1" : "#334155",
                                                                                         fontStyle: remarks === "No remarks" ? "italic" : "normal",
                                                                                     }}>{remarks}</div>
                                                                                 </div>
 
                                                                                 {/* Status badge */}
-                                                                                <div style={{
+                                                                                <div data-print="sig-status" style={{
                                                                                     background: sv.bg,
                                                                                     color: sv.color,
                                                                                     border: `1px solid ${sv.border}`,
@@ -720,6 +827,7 @@ const ClearanceDetails: React.FC<ClearanceDetailsProps> = ({
                                                                                         </div>
                                                                                     ) : (
                                                                                         <button
+                                                                                            data-print="approve-btn"
                                                                                             onClick={handleApprove}
                                                                                             disabled={approving}
                                                                                             style={{
