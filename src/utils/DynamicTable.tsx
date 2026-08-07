@@ -13,7 +13,9 @@ export type ColumnDefinition<T extends object> = {
     sortable?: boolean;
     minWidth?: string | number;
     formatter?: (cell: T[keyof T], row: T) => React.ReactNode;
-    headerStyle?: React.CSSProperties; 
+    headerStyle?: React.CSSProperties;
+    /** Optional: return a value used for sorting instead of the raw cell value (e.g. a Date or number) */
+    sortValue?: (cell: T[keyof T], row: T) => string | number | Date | null | undefined;
 };
 
 // Custom button type for header actions
@@ -101,15 +103,22 @@ const DynamicTable = <T extends object>({
     // Sort data by selected column
     const sortedData = React.useMemo(() => {
         if (!sortConfig.key) return filteredData;
+        const col = columns.find(c => c.dataField === sortConfig.key);
         return [...filteredData].sort((a, b) => {
-            const aVal = a[sortConfig.key!];
-            const bVal = b[sortConfig.key!];
+            const rawA = a[sortConfig.key!];
+            const rawB = b[sortConfig.key!];
+            const aVal = col?.sortValue ? col.sortValue(rawA, a) : rawA;
+            const bVal = col?.sortValue ? col.sortValue(rawB, b) : rawB;
             if (aVal === bVal) return 0;
             if (aVal == null) return 1;
             if (bVal == null) return -1;
+            // Compare Dates numerically
+            if (aVal instanceof Date && bVal instanceof Date) {
+                return (aVal.getTime() - bVal.getTime()) * (sortConfig.direction === 'asc' ? 1 : -1);
+            }
             return (aVal < bVal ? -1 : 1) * (sortConfig.direction === 'asc' ? 1 : -1);
         });
-    }, [filteredData, sortConfig]);
+    }, [filteredData, sortConfig, columns]);
 
     // Paginate data
     const paginatedData = React.useMemo(() => {
