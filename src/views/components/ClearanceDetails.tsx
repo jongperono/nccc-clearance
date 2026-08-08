@@ -63,21 +63,52 @@ const ClearanceDetails: React.FC<ClearanceDetailsProps> = ({
                     body { background: #fff !important; font-family: sans-serif; font-size: 11px; }
                     .no-print { display: none !important; }
 
+                    /* ── Letter Header (print-only) ── */
+                    .letter-header {
+                        display: flex !important;
+                        align-items: center;
+                        gap: 16px;
+                        padding: 10px 0 12px;
+                        border-bottom: 3px solid #1e3a5f;
+                        margin-bottom: 14px;
+                    }
+                    .letter-header img {
+                        width: 64px;
+                        height: auto;
+                    }
+                    .letter-header-text {
+                        flex: 1;
+                    }
+                    .letter-header-company {
+                        font-size: 18px;
+                        font-weight: 800;
+                        color: #1e3a5f;
+                        letter-spacing: 0.04em;
+                        text-transform: uppercase;
+                        line-height: 1.1;
+                    }
+                    .letter-header-tagline {
+                        font-size: 9px;
+                        color: #64748b;
+                        letter-spacing: 0.1em;
+                        text-transform: uppercase;
+                        margin-top: 3px;
+                    }
+                    .letter-header-doctype {
+                        font-size: 11px;
+                        font-weight: 700;
+                        color: #fff;
+                        background: #1e3a5f;
+                        border-radius: 6px;
+                        padding: 4px 12px;
+                        letter-spacing: 0.06em;
+                        text-transform: uppercase;
+                        white-space: nowrap;
+                    }
+
                     /* ── Header Banner ── */
                     [data-print="header"] {
-                        padding: 8px 14px 14px !important;
-                    }
-                    [data-print="header"] img {
-                        width: 48px !important;
-                    }
-                    [data-print="header"] [data-print="title"] {
-                        font-size: 15px !important;
-                    }
-                    [data-print="header"] [data-print="subtitle"] {
-                        font-size: 9px !important;
-                    }
-                    [data-print="header"] [data-print="date"] {
-                        font-size: 9px !important;
+                        display: none !important;
                     }
 
                     /* ── Cards Container ── */
@@ -174,6 +205,17 @@ const ClearanceDetails: React.FC<ClearanceDetailsProps> = ({
             </html>
         `);
         printWindow.document.close();
+        // Inject letter header before the printable content
+        const letterHeader = printWindow.document.createElement("div");
+        letterHeader.className = "letter-header";
+        letterHeader.innerHTML = `
+            <img src="${ncccLogo}" alt="NCCC Logo" />
+            <div class="letter-header-text">
+                <div class="letter-header-tagline">Human Resources Department &nbsp;|&nbsp; Clearance Management System</div>
+            </div>
+            <div class="letter-header-doctype">${isTransfer ? "Transfer Clearance" : "Employee Clearance"}</div>
+        `;
+        printWindow.document.body.prepend(letterHeader);
         printWindow.focus();
         setTimeout(() => { printWindow.print(); printWindow.close(); }, 400);
     };
