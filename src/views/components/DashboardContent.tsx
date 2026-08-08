@@ -34,83 +34,84 @@ const Dashboard = () => {
     const { showAlert, AlertComponent } = useCustomAlert();
 
     // Fetch clearances (merge clearances and other_clearances)
-    useEffect(() => {
-        const fetchClearances = async () => {
-            setLoading(true);
-            try {
-                const response = await apiRequest("/my-clearances", "GET") as any;
-                const responseData = response?.data;
+    const fetchClearances = async () => {
+        setLoading(true);
+        try {
+            const response = await apiRequest("/my-clearances", "GET") as any;
+            const responseData = response?.data;
 
-                // Merge clearances and other_clearances if both exist
-                let dataArr: any[] = [];
-                if (responseData?.data?.clearances && responseData?.data?.other_clearances) {
-                    dataArr = [
-                        ...responseData.data.clearances,
-                        ...responseData.data.other_clearances
-                    ];
-                } else if (responseData?.data?.clearances) {
-                    dataArr = responseData.data.clearances;
-                } else if (Array.isArray(responseData?.data)) {
-                    dataArr = responseData.data;
+            // Merge clearances and other_clearances if both exist
+            let dataArr: any[] = [];
+            if (responseData?.data?.clearances && responseData?.data?.other_clearances) {
+                dataArr = [
+                    ...responseData.data.clearances,
+                    ...responseData.data.other_clearances
+                ];
+            } else if (responseData?.data?.clearances) {
+                dataArr = responseData.data.clearances;
+            } else if (Array.isArray(responseData?.data)) {
+                dataArr = responseData.data;
+            }
+
+            const mapped = dataArr.map((item: any) => {
+                const clearance = item.Clearance || item || {};
+                const overallStatus = item.status ?? clearance.clearance_status ?? "Pending";
+                const isApprovedByMe = item.is_approved_by_me === true;
+
+                // Personal display status: if the logged-in user has already approved
+                // this clearance, show "Approved" regardless of overall progress.
+                // If overall is Cleared, always show Cleared.
+                let displayStatus: string;
+                if (overallStatus?.toLowerCase() === "cleared") {
+                    displayStatus = "Cleared";
+                } else if (isApprovedByMe) {
+                    displayStatus = "Approved";
+                } else {
+                    displayStatus = overallStatus;
                 }
 
-                const mapped = dataArr.map((item: any) => {
-                    const clearance = item.Clearance || item || {};
-                    const overallStatus = item.status ?? clearance.clearance_status ?? "Pending";
-                    const isApprovedByMe = item.is_approved_by_me === true;
-
-                    // Personal display status: if the logged-in user has already approved
-                    // this clearance, show "Approved" regardless of overall progress.
-                    // If overall is Cleared, always show Cleared.
-                    let displayStatus: string;
-                    if (overallStatus?.toLowerCase() === "cleared") {
-                        displayStatus = "Cleared";
-                    } else if (isApprovedByMe) {
-                        displayStatus = "Approved";
-                    } else {
-                        displayStatus = overallStatus;
-                    }
-
-                    return {
-                        id: clearance.id ?? item.clearance_id ?? item.id ?? 0,
-                        tracking_id: clearance.tracking_id ?? "N/A",
-                        name: [
-                            clearance.first_name ?? "",
-                            clearance.middle_name ?? "",
-                            clearance.last_name ?? ""
-                        ].filter(Boolean).join(" ") || "N/A",
-                        company: clearance.Company?.name ?? clearance.company_id ?? "N/A",
-                        department: clearance.Department?.name ?? clearance.department_id ?? "N/A",
-                        branch: clearance.Branch?.name ?? clearance.branch_id ?? "N/A",
-                        position: clearance.position ?? "N/A",
-                        effectivity_date: clearance.effectivity_date
-                            ? new Date(clearance.effectivity_date).toLocaleDateString()
+                return {
+                    id: clearance.id ?? item.clearance_id ?? item.id ?? 0,
+                    tracking_id: clearance.tracking_id ?? "N/A",
+                    name: [
+                        clearance.first_name ?? "",
+                        clearance.middle_name ?? "",
+                        clearance.last_name ?? ""
+                    ].filter(Boolean).join(" ") || "N/A",
+                    company: clearance.Company?.name ?? clearance.company_id ?? "N/A",
+                    department: clearance.Department?.name ?? clearance.department_id ?? "N/A",
+                    branch: clearance.Branch?.name ?? clearance.branch_id ?? "N/A",
+                    position: clearance.position ?? "N/A",
+                    effectivity_date: clearance.effectivity_date
+                        ? new Date(clearance.effectivity_date).toLocaleDateString()
+                        : "N/A",
+                    purpose: clearance.purpose ?? clearance.type ?? "N/A",
+                    date: clearance.createdAt
+                        ? new Date(clearance.createdAt).toLocaleDateString()
+                        : clearance.created_at
+                            ? new Date(clearance.created_at).toLocaleDateString()
                             : "N/A",
-                        purpose: clearance.purpose ?? clearance.type ?? "N/A",
-                        date: clearance.createdAt
-                            ? new Date(clearance.createdAt).toLocaleDateString()
-                            : clearance.created_at
-                                ? new Date(clearance.created_at).toLocaleDateString()
-                                : "N/A",
-                        status: overallStatus,
-                        display_status: displayStatus,
-                        assigner: clearance.assigner
-                            ? [
-                                clearance.assigner.first_name,
-                                clearance.assigner.last_name
-                            ].filter(Boolean).join(" ")
-                            : null,
-                        is_approved_by_me: isApprovedByMe
-                    };
-                });
-                setClearances(mapped);
-            } catch (error) {
-                setClearances([]);
-                showAlert("error", "Failed to fetch clearances.");
-            } finally {
-                setLoading(false);
-            }
-        };
+                    status: overallStatus,
+                    display_status: displayStatus,
+                    assigner: clearance.assigner
+                        ? [
+                            clearance.assigner.first_name,
+                            clearance.assigner.last_name
+                        ].filter(Boolean).join(" ")
+                        : null,
+                    is_approved_by_me: isApprovedByMe
+                };
+            });
+            setClearances(mapped);
+        } catch (error) {
+            setClearances([]);
+            showAlert("error", "Failed to fetch clearances.");
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    useEffect(() => {
         fetchClearances();
     }, []);
 
@@ -249,6 +250,7 @@ const Dashboard = () => {
                 show={showDetailsModal}
                 onHide={() => setShowDetailsModal(false)}
                 clearanceId={selectedClearanceId ?? 0}
+                onUpdated={fetchClearances}
             />
         </div>
     );

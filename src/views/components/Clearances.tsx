@@ -37,106 +37,107 @@ const Clearances = () => {
     const [showConfirmClear, setShowConfirmClear] = useState(false);
     const [clearTarget, setClearTarget] = useState<ClearanceItem | null>(null);
 
-    useEffect(() => {
-        const fetchClearances = async () => {
-            setLoading(true);
+    const fetchClearances = async () => {
+        setLoading(true);
 
-            try {
-                const response = await apiRequest("/my-clearances", "GET") as any;
-                const responseData = response?.data;
+        try {
+            const response = await apiRequest("/my-clearances", "GET") as any;
+            const responseData = response?.data;
 
-                // If backend returns { clearances, other_clearances }
-                if (responseData?.data?.clearances && responseData?.data?.other_clearances) {
-                    const mapClearance = (item: any, isSignatory: boolean) => {
-                        const clearance = item.Clearance || item || {};
-                        const isApprovedByMe = isSignatory ? item.is_approved_by_me === true : false;
-                        const status = item.status ?? clearance.clearance_status ?? "Pending";
-                        // status should follow the model, do not override with is_approved_by_me
-                        return {
-                            id: clearance.id ?? item.clearance_id ?? item.id ?? 0,
-                            tracking_id: clearance.tracking_id ?? item.tracking_id ?? "N/A",
-                            name: [
-                                clearance.first_name ?? "",
-                                clearance.middle_name ?? "",
-                                clearance.last_name ?? ""
-                            ].filter(Boolean).join(" ") || "N/A",
-                            company: clearance.Company?.company_name ?? clearance.Company?.name ?? clearance.company_id ?? "N/A",
-                            department: clearance.Department?.department_name ?? clearance.Department?.name ?? clearance.department_id ?? "N/A",
-                            branch: clearance.Branch?.branch_name ?? clearance.Branch?.name ?? clearance.branch_id ?? "N/A",
-                            purpose: clearance.purpose ?? "N/A",
-                            position: clearance.position ?? "N/A",
-                            effectivity_date: clearance.effectivity_date
-                                ? new Date(clearance.effectivity_date).toLocaleDateString()
+            // If backend returns { clearances, other_clearances }
+            if (responseData?.data?.clearances && responseData?.data?.other_clearances) {
+                const mapClearance = (item: any, isSignatory: boolean) => {
+                    const clearance = item.Clearance || item || {};
+                    const isApprovedByMe = isSignatory ? item.is_approved_by_me === true : false;
+                    const status = item.status ?? clearance.clearance_status ?? "Pending";
+                    // status should follow the model, do not override with is_approved_by_me
+                    return {
+                        id: clearance.id ?? item.clearance_id ?? item.id ?? 0,
+                        tracking_id: clearance.tracking_id ?? item.tracking_id ?? "N/A",
+                        name: [
+                            clearance.first_name ?? "",
+                            clearance.middle_name ?? "",
+                            clearance.last_name ?? ""
+                        ].filter(Boolean).join(" ") || "N/A",
+                        company: clearance.Company?.company_name ?? clearance.Company?.name ?? clearance.company_id ?? "N/A",
+                        department: clearance.Department?.department_name ?? clearance.Department?.name ?? clearance.department_id ?? "N/A",
+                        branch: clearance.Branch?.branch_name ?? clearance.Branch?.name ?? clearance.branch_id ?? "N/A",
+                        purpose: clearance.purpose ?? "N/A",
+                        position: clearance.position ?? "N/A",
+                        effectivity_date: clearance.effectivity_date
+                            ? new Date(clearance.effectivity_date).toLocaleDateString()
+                            : "N/A",
+                        date: clearance.createdAt
+                            ? new Date(clearance.createdAt).toLocaleDateString()
+                            : clearance.created_at
+                                ? new Date(clearance.created_at).toLocaleDateString()
                                 : "N/A",
-                            date: clearance.createdAt
-                                ? new Date(clearance.createdAt).toLocaleDateString()
-                                : clearance.created_at
-                                    ? new Date(clearance.created_at).toLocaleDateString()
-                                    : "N/A",
-                            status,
-                            assigner: clearance.assigner
-                                ? [
-                                    clearance.assigner.first_name,
-                                    clearance.assigner.last_name
-                                ].filter(Boolean).join(" ")
-                                : null,
-                            is_approved_by_me: isApprovedByMe
-                        };
+                        status,
+                        assigner: clearance.assigner
+                            ? [
+                                clearance.assigner.first_name,
+                                clearance.assigner.last_name
+                            ].filter(Boolean).join(" ")
+                            : null,
+                        is_approved_by_me: isApprovedByMe
                     };
-                    setMyClearances(responseData.data.clearances.map((item: any) => mapClearance(item, true)));
-                    setOtherClearances(responseData.data.other_clearances.map((item: any) => mapClearance(item, false)));
-                } else if (Array.isArray(responseData?.data)) {
-                    // fallback for old response
-                    const filtered = responseData.data.map((item: any) => {
-                        const clearance = item.Clearance || {};
-                        const isApprovedByMe = item.is_approved_by_me === true;
-                        const status = item.status ?? clearance.clearance_status ?? "Pending";
-                        // status should follow the model, do not override with is_approved_by_me
-                        return {
-                            id: clearance.id ?? item.clearance_id ?? item.id ?? 0,
-                            tracking_id: clearance.tracking_id ?? item.tracking_id ?? "N/A",
-                            name: [
-                                clearance.first_name ?? "",
-                                clearance.middle_name ?? "",
-                                clearance.last_name ?? ""
-                            ].filter(Boolean).join(" ") || "N/A",
-                            company: clearance.Company?.company_name ?? clearance.Company?.name ?? clearance.company_id ?? "N/A",
-                            department: clearance.Department?.department_name ?? clearance.Department?.name ?? clearance.department_id ?? "N/A",
-                            branch: clearance.Branch?.branch_name ?? clearance.Branch?.name ?? clearance.branch_id ?? "N/A",
-                            purpose: clearance.purpose ?? "N/A",
-                            position: clearance.position ?? "N/A",
-                            effectivity_date: clearance.effectivity_date
-                                ? new Date(clearance.effectivity_date).toLocaleDateString()
+                };
+                setMyClearances(responseData.data.clearances.map((item: any) => mapClearance(item, true)));
+                setOtherClearances(responseData.data.other_clearances.map((item: any) => mapClearance(item, false)));
+            } else if (Array.isArray(responseData?.data)) {
+                // fallback for old response
+                const filtered = responseData.data.map((item: any) => {
+                    const clearance = item.Clearance || {};
+                    const isApprovedByMe = item.is_approved_by_me === true;
+                    const status = item.status ?? clearance.clearance_status ?? "Pending";
+                    // status should follow the model, do not override with is_approved_by_me
+                    return {
+                        id: clearance.id ?? item.clearance_id ?? item.id ?? 0,
+                        tracking_id: clearance.tracking_id ?? item.tracking_id ?? "N/A",
+                        name: [
+                            clearance.first_name ?? "",
+                            clearance.middle_name ?? "",
+                            clearance.last_name ?? ""
+                        ].filter(Boolean).join(" ") || "N/A",
+                        company: clearance.Company?.company_name ?? clearance.Company?.name ?? clearance.company_id ?? "N/A",
+                        department: clearance.Department?.department_name ?? clearance.Department?.name ?? clearance.department_id ?? "N/A",
+                        branch: clearance.Branch?.branch_name ?? clearance.Branch?.name ?? clearance.branch_id ?? "N/A",
+                        purpose: clearance.purpose ?? "N/A",
+                        position: clearance.position ?? "N/A",
+                        effectivity_date: clearance.effectivity_date
+                            ? new Date(clearance.effectivity_date).toLocaleDateString()
+                            : "N/A",
+                        date: clearance.createdAt
+                            ? new Date(clearance.createdAt).toLocaleDateString()
+                            : clearance.created_at
+                                ? new Date(clearance.created_at).toLocaleDateString()
                                 : "N/A",
-                            date: clearance.createdAt
-                                ? new Date(clearance.createdAt).toLocaleDateString()
-                                : clearance.created_at
-                                    ? new Date(clearance.created_at).toLocaleDateString()
-                                    : "N/A",
-                            status,
-                            assigner: clearance.assigner
-                                ? [
-                                    clearance.assigner.first_name,
-                                    clearance.assigner.last_name
-                                ].filter(Boolean).join(" ")
-                                : null,
-                            is_approved_by_me: isApprovedByMe
-                        };
-                    });
-                    setMyClearances(filtered);
-                    setOtherClearances([]);
-                } else {
-                    setMyClearances([]);
-                    setOtherClearances([]);
-                }
-            } catch (error) {
+                        status,
+                        assigner: clearance.assigner
+                            ? [
+                                clearance.assigner.first_name,
+                                clearance.assigner.last_name
+                            ].filter(Boolean).join(" ")
+                            : null,
+                        is_approved_by_me: isApprovedByMe
+                    };
+                });
+                setMyClearances(filtered);
+                setOtherClearances([]);
+            } else {
                 setMyClearances([]);
                 setOtherClearances([]);
-                console.error("Error fetching clearances:", error);
-            } finally {
-                setLoading(false);
             }
-        };
+        } catch (error) {
+            setMyClearances([]);
+            setOtherClearances([]);
+            console.error("Error fetching clearances:", error);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    useEffect(() => {
         fetchClearances();
     }, []);
 
@@ -477,6 +478,7 @@ const Clearances = () => {
                 show={showDetailsModal}
                 onHide={() => setShowDetailsModal(false)}
                 clearanceId={selectedClearanceId ?? 0}
+                onUpdated={fetchClearances}
             />
         </div>
     );

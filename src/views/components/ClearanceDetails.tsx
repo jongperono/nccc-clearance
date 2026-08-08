@@ -9,13 +9,18 @@ interface ClearanceDetailsProps {
     show: boolean;
     onHide: () => void;
     clearanceId: number | string;
+    onUpdated?: () => void;
 }
 
 const ClearanceDetails: React.FC<ClearanceDetailsProps> = ({
     show,
     onHide,
     clearanceId,
+    onUpdated,
 }) => {
+    // Tracks whether an approve or remark action happened so the parent
+    // knows to re-fetch when the modal closes.
+    const wasUpdatedRef = React.useRef(false);
     const [loading, setLoading] = useState(true);
     const [clearance, setClearance] = useState<any>(null);
     const [signatories, setSignatories] = useState<any[]>([]);
@@ -184,6 +189,8 @@ const ClearanceDetails: React.FC<ClearanceDetailsProps> = ({
 
     useEffect(() => {
         if (!show) return;
+        // Reset the update flag each time the modal opens
+        wasUpdatedRef.current = false;
         setLoading(true);
         setError(null);
 
@@ -289,11 +296,20 @@ const ClearanceDetails: React.FC<ClearanceDetailsProps> = ({
         }
     };
 
+    // Close handler — notifies parent to re-fetch only when something changed
+    const handleClose = () => {
+        if (wasUpdatedRef.current && onUpdated) {
+            onUpdated();
+        }
+        onHide();
+    };
+
     const handleApprove = async () => {
         if (!clearanceId || approving) return;
         setApproving(true);
         try {
             await apiRequest("/my-clearance/approve", "PUT", { clearance_id: clearanceId });
+            wasUpdatedRef.current = true;
             await refreshDetails();
             showAlert("success", "Clearance approved successfully!");
         } catch (err: any) {
@@ -336,7 +352,7 @@ const ClearanceDetails: React.FC<ClearanceDetailsProps> = ({
     );
 
     return (
-        <Modal show={show} onHide={onHide} size="lg">
+        <Modal show={show} onHide={handleClose} size="lg">
             <Modal.Header closeButton style={{
                 background: isTransfer
                     ? "linear-gradient(135deg, #78350f 0%, #d97706 100%)"
@@ -1061,6 +1077,7 @@ const ClearanceDetails: React.FC<ClearanceDetailsProps> = ({
                                                 clearance_id: clearanceId,
                                                 remark: remarkText.trim(),
                                             });
+                                            wasUpdatedRef.current = true;
                                             // Refresh remarks map
                                             if (refreshRemarksRef.current) await refreshRemarksRef.current();
                                             setShowRemarkModal(false);
@@ -1152,7 +1169,7 @@ const ClearanceDetails: React.FC<ClearanceDetailsProps> = ({
                             ✅ You have already approved this clearance
                         </div>
                     )}
-                    <Button variant="secondary" onClick={onHide} style={{ borderRadius: "8px" }}>
+                    <Button variant="secondary" onClick={handleClose} style={{ borderRadius: "8px" }}>
                         Close
                     </Button>
                 </div>
