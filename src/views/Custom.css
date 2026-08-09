@@ -81,3 +81,53 @@ input[type="number"]::-ms-clear,
 input[type="number"]::-ms-reveal {
   display: none;
 }
+
+/* Clearance Details Modal — centered with top/bottom margins on mobile */
+@media (max-width: 767.98px) {
+  .clearance-details-modal {
+    margin: 16px auto !important;
+    width: calc(100% - 32px) !important;
+    max-width: 480px !important;
+    min-height: calc(100vh - 32px) !important;
+    display: flex !important;
+    flex-direction: column !important;
+  }
+
+  .clearance-details-modal .modal-content {
+    border-radius: 16px !important;
+    flex: 1 !important;
+    display: flex !important;
+    flex-direction: column !important;
+    overflow: hidden !important;
+  }
+
+  .clearance-details-modal .modal-body {
+    overflow-y: auto !important;
+    flex: 1 !important;
+  }
+}
+
+/* On phones (< 576px) — same treatment, slightly smaller margin */
+@media (max-width: 575.98px) {
+  .clearance-details-modal {
+    margin: 12px auto !important;
+    width: calc(100% - 24px) !important;
+    max-width: 100% !important;
+    min-height: calc(100vh - 24px) !important;
+    display: flex !important;
+    flex-direction: column !important;
+  }
+
+  .clearance-details-modal .modal-content {
+    border-radius: 12px !important;
+    flex: 1 !important;
+    display: flex !important;
+    flex-direction: column !important;
+    overflow: hidden !important;
+  }
+
+  .clearance-details-modal .modal-body {
+    overflow-y: auto !important;
+    flex: 1 !important;
+  }
+}
