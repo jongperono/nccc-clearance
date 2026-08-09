@@ -260,7 +260,7 @@ const Dashboard = () => {
                         alignItems: "center",
                         gap: "2px"
                     }}>
-                        {isStatusOnly ? emoji : `${label}`}
+                        {`${label}`}
                     </span>
                 );
             }
