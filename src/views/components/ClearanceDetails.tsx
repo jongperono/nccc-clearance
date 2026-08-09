@@ -693,7 +693,12 @@ const ClearanceDetails: React.FC<ClearanceDetailsProps> = ({
                                                 padding: "1px 8px",
                                                 fontSize: "11px",
                                                 fontWeight: 600,
-                                            }}>{signatories.length}</span>
+                                            }}>
+                                                {signatories.filter(s =>
+                                                    s.is_approved === true ||
+                                                    (typeof s.status === "string" && s.status.toLowerCase() === "approved")
+                                                ).length} / {signatories.length}
+                                            </span>
                                         </div>
                                         {canAddSignatory && (
                                             <Button
