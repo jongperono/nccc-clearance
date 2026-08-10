@@ -1,7 +1,7 @@
 // === src/utils/ApiService.ts ===
 // base url
-const BASE_URL = "http://localhost:42061/api/v1";
-// const BASE_URL = "https://ocs.nccc.com.ph/api/v1";
+// const BASE_URL = "http://localhost:42061/api/v1";
+const BASE_URL = "https://ocs.nccc.com.ph/api/v1";
 
 // Utility function to handle timeout
 const fetchWithTimeout = (url: string, options: RequestInit, timeout = 15000) => {

@@ -13,7 +13,11 @@ export type ColumnDefinition<T extends object> = {
     sortable?: boolean;
     minWidth?: string | number;
     formatter?: (cell: T[keyof T], row: T) => React.ReactNode;
-    headerStyle?: React.CSSProperties; 
+    headerStyle?: React.CSSProperties;
+    /** Optional: styles applied to each cell in this column */
+    style?: React.CSSProperties;
+    /** Optional: return a value used for sorting instead of the raw cell value (e.g. a Date or number) */
+    sortValue?: (cell: T[keyof T], row: T) => string | number | Date | null | undefined;
 };
 
 // Custom button type for header actions
@@ -101,15 +105,22 @@ const DynamicTable = <T extends object>({
     // Sort data by selected column
     const sortedData = React.useMemo(() => {
         if (!sortConfig.key) return filteredData;
+        const col = columns.find(c => c.dataField === sortConfig.key);
         return [...filteredData].sort((a, b) => {
-            const aVal = a[sortConfig.key!];
-            const bVal = b[sortConfig.key!];
+            const rawA = a[sortConfig.key!];
+            const rawB = b[sortConfig.key!];
+            const aVal = col?.sortValue ? col.sortValue(rawA, a) : rawA;
+            const bVal = col?.sortValue ? col.sortValue(rawB, b) : rawB;
             if (aVal === bVal) return 0;
             if (aVal == null) return 1;
             if (bVal == null) return -1;
+            // Compare Dates numerically
+            if (aVal instanceof Date && bVal instanceof Date) {
+                return (aVal.getTime() - bVal.getTime()) * (sortConfig.direction === 'asc' ? 1 : -1);
+            }
             return (aVal < bVal ? -1 : 1) * (sortConfig.direction === 'asc' ? 1 : -1);
         });
-    }, [filteredData, sortConfig]);
+    }, [filteredData, sortConfig, columns]);
 
     // Paginate data
     const paginatedData = React.useMemo(() => {
@@ -186,9 +197,10 @@ const DynamicTable = <T extends object>({
                                         style={{
                                             cursor: col.sortable ? 'pointer' : 'default',
                                             minWidth: col.minWidth || 'auto',
-                                            textAlign: col.text === "Actions" ? "center" : "left", // center only Actions
+                                            textAlign: col.text === "Actions" ? "center" : "left",
                                             fontSize: '0.97rem',
-                                            fontWeight: 600
+                                            fontWeight: 600,
+                                            ...col.headerStyle,
                                         }}
                                     >
                                         <div className={`d-flex align-items-center${col.text === "Actions" ? " justify-content-center" : ""}`}>
@@ -218,8 +230,9 @@ const DynamicTable = <T extends object>({
                                         <td
                                             key={`${String(item[keyField])}-${String(col.dataField)}`}
                                             style={{
-                                                textAlign: col.text === "Actions" ? "center" : "left", // center only Actions
-                                                verticalAlign: 'middle'
+                                                textAlign: col.text === "Actions" ? "center" : "left",
+                                                verticalAlign: 'middle',
+                                                ...col.style,
                                             }}
                                         >
                                             {col.formatter ? col.formatter(item[col.dataField], item) : String(item[col.dataField])}
