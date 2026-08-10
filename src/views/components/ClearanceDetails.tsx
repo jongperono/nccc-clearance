@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from "react";
 import { Modal, Spinner, Button, Form, ListGroup, InputGroup } from "react-bootstrap";
-import { FaPrint, FaChevronDown, FaChevronUp } from "react-icons/fa";
+import { FaPrint } from "react-icons/fa";
 import { useCustomAlert } from "../../utils/CustomAlert";
 import ncccLogo from "../../assets/nccc_logo.png";
 import { apiRequest } from "../../utils/ApiService";

@@ -562,8 +562,7 @@ const Dashboard = () => {
                 },
 
                 formatter: (
-                    cell,
-                    row
+                    cell
                 ) => {
                     const status =
                         (
@@ -832,9 +831,9 @@ const Dashboard = () => {
                 <Button
                     variant="outline-secondary"
                     className={`px-2 px-sm-3 ${selectedStatus ===
-                            "All"
-                            ? "bg-secondary text-light"
-                            : ""
+                        "All"
+                        ? "bg-secondary text-light"
+                        : ""
                         }`}
                     onClick={() =>
                         setSelectedStatus(
@@ -1036,20 +1035,15 @@ const Dashboard = () => {
                         }}
                     >
                         <DynamicTable<ClearanceItem>
-                            data={
-                                filteredClearances
-                            }
+                            data={filteredClearances}
 
-                            columns={
-                                getColumns()
-                            }
+                            columns={getColumns()}
 
                             keyField="id"
 
                             striped
                             hover
-
-                            responsive="sm"
+                            responsive
 
                             title={
                                 isMobile
@@ -1057,51 +1051,21 @@ const Dashboard = () => {
                                     : "Clearance List"
                             }
 
-                            /*
-                             * SEARCH IS NOW
-                             * ENABLED ON MOBILE
-                             * AND DESKTOP
-                             */
+                            // Search enabled on mobile and desktop
                             showSearch={true}
 
-                            /*
-                             * Pagination remains
-                             * disabled on mobile
-                             */
-                            showPagination={
-                                !isMobile
-                            }
+                            // Pagination disabled on mobile
+                            showPagination={!isMobile}
 
                             pageSize={
                                 isMobile
                                     ? 5
-                                    : filteredClearances.length >
-                                        10
+                                    : filteredClearances.length > 10
                                         ? 10
                                         : filteredClearances.length
                             }
 
-                            paginationSize="sm"
 
-                            searchPlaceholder={
-                                isMobile
-                                    ? "Search clearance..."
-                                    : "Search clearances..."
-                            }
-
-                            tableStyle={{
-                                fontSize:
-                                    isMobile
-                                        ? "9px"
-                                        : isTablet
-                                            ? "11px"
-                                            : "14px",
-
-                                minWidth:
-                                    isMobile
-                                        ? "400px"
-                                        : "100%"
-                            }}
                         />
                     </div>
                 )}
