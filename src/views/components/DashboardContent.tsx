@@ -23,6 +23,7 @@ interface ClearanceItem {
     status: string;
     display_status: string;
     assigner?: string | null;
+    assigned_by?: number | null;
     is_approved_by_me?: boolean;
 }
 
@@ -34,6 +35,7 @@ const Dashboard = () => {
     const [showEditModal, setShowEditModal] = useState(false);
     const [selectedClearanceId, setSelectedClearanceId] =
         useState<number | null>(null);
+    const [currentEmployeeId, setCurrentEmployeeId] = useState<number | null>(null);
 
     const { showAlert, AlertComponent } = useCustomAlert();
 
@@ -229,6 +231,10 @@ const Dashboard = () => {
                                     )
                                 : null,
 
+                        assigned_by:
+                            clearance.assigned_by ??
+                            null,
+
                         is_approved_by_me:
                             isApprovedByMe
                     };
@@ -250,6 +256,24 @@ const Dashboard = () => {
 
     useEffect(() => {
         fetchClearances();
+    }, []);
+
+    // ---------------------------------------------------------
+    // FETCH CURRENT EMPLOYEE ID
+    // ---------------------------------------------------------
+
+    useEffect(() => {
+        const fetchCurrentEmployee = async () => {
+            try {
+                const response = await apiRequest<any>("/check-permissions", "GET");
+                const perms = response?.data?.data || {};
+                setCurrentEmployeeId(perms.employee_id ?? null);
+            } catch (error) {
+                console.error("Failed to fetch current employee:", error);
+            }
+        };
+
+        fetchCurrentEmployee();
     }, []);
 
     // ---------------------------------------------------------
@@ -695,6 +719,7 @@ const Dashboard = () => {
                     row
                 ) => {
                     const isCleared = (row.display_status || row.status || "").toLowerCase() === "cleared";
+                    const isAssignedByMe = currentEmployeeId !== null && row.assigned_by === currentEmployeeId;
 
                     return (
                         <div style={{
@@ -753,7 +778,7 @@ const Dashboard = () => {
                                     : "View"}
                             </Button>
 
-                            {!isCleared && (
+                            {!isCleared && isAssignedByMe && (
                                 <Button
                                     variant="primary"
                                     size="sm"

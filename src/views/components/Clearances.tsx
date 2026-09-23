@@ -21,6 +21,7 @@ interface ClearanceItem {
     date: string;
     status: string;
     assigner?: string | null;
+    assigned_by?: number | null;
     is_approved_by_me?: boolean;
     [key: string]: unknown;
 }
@@ -130,6 +131,9 @@ const Clearances = () => {
 
     const [canClearClearances, setCanClearClearances] =
         useState(false);
+
+    const [currentEmployeeId, setCurrentEmployeeId] =
+        useState<number | null>(null);
 
     const { showAlert, AlertComponent } = useCustomAlert();
 
@@ -260,6 +264,9 @@ const Clearances = () => {
                                 .join(" ")
                             : null,
 
+                    assigned_by:
+                        clearance.assigned_by ?? null,
+
                     is_approved_by_me:
                         isApprovedByMe
                 };
@@ -333,10 +340,15 @@ const Clearances = () => {
                 setCanClearClearances(
                     !!perms.can_clear_clearances
                 );
+
+                setCurrentEmployeeId(
+                    perms.employee_id ?? null
+                );
             })
-            .catch(() =>
-                setCanClearClearances(false)
-            );
+            .catch(() => {
+                setCanClearClearances(false);
+                setCurrentEmployeeId(null);
+            });
     }, []);
 
     // ---------------------------------------------------------
@@ -548,6 +560,7 @@ const Clearances = () => {
             text: "Actions",
             formatter: (_cell, row) => {
                 const isCleared = (row.status || "").toLowerCase() === "cleared";
+                const isAssignedByMe = currentEmployeeId !== null && row.assigned_by === currentEmployeeId;
 
                 return (
                     <div className="d-flex flex-wrap gap-1">
@@ -561,7 +574,7 @@ const Clearances = () => {
                             View
                         </Button>
 
-                        {!isCleared && (
+                        {!isCleared && isAssignedByMe && (
                             <Button
                                 variant="info"
                                 size="sm"
@@ -603,7 +616,7 @@ const Clearances = () => {
                 );
             }
         }
-    ], [handleViewDetails, handleReviewClick, handleApprove]);
+    ], [handleViewDetails, handleReviewClick, handleApprove, currentEmployeeId]);
 
     const markClearedColumn = useMemo((): ColumnDefinition<ClearanceItem> => ({
         dataField: "mark_cleared",
@@ -679,6 +692,7 @@ const Clearances = () => {
                     row
                 ) => {
                     const isCleared = (row.status || "").toLowerCase() === "cleared";
+                    const isAssignedByMe = currentEmployeeId !== null && row.assigned_by === currentEmployeeId;
 
                     return (
                         <div className="d-flex flex-wrap gap-1">
@@ -694,7 +708,7 @@ const Clearances = () => {
                                 View
                             </Button>
 
-                            {!isCleared && (
+                            {!isCleared && isAssignedByMe && (
                                 <Button
                                     variant="info"
                                     size="sm"
@@ -740,7 +754,7 @@ const Clearances = () => {
         }
 
         return filtered;
-    }, [baseColumns, canClearClearances, markClearedColumn, handleViewDetails, handleReviewClick]);
+    }, [baseColumns, canClearClearances, markClearedColumn, handleViewDetails, handleReviewClick, currentEmployeeId]);
 
     // ---------------------------------------------------------
     // MOBILE SEARCH FILTERING
@@ -824,6 +838,7 @@ const Clearances = () => {
         const isCleared =
             (row.status || "").toLowerCase() ===
             "cleared";
+        const isAssignedByMe = currentEmployeeId !== null && row.assigned_by === currentEmployeeId;
 
         return (
             <div
@@ -926,7 +941,7 @@ const Clearances = () => {
                             View Details
                         </Button>
 
-                        {!isCleared && (
+                        {!isCleared && isAssignedByMe && (
                             <Button
                                 variant="info"
                                 size="sm"
@@ -1004,7 +1019,7 @@ const Clearances = () => {
                 </div>
             </div>
         );
-    }, [handleViewDetails, handleReviewClick, handleApprove, canClearClearances, handleClear]);
+    }, [handleViewDetails, handleReviewClick, handleApprove, canClearClearances, handleClear, currentEmployeeId]);
 
     // ---------------------------------------------------------
     // LOADING
