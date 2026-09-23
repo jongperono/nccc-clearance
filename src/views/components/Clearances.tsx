@@ -3,6 +3,7 @@ import { Button, Spinner, Modal, Badge } from "react-bootstrap";
 import DynamicTable, { ColumnDefinition } from "../../utils/DynamicTable";
 import MessageThreadModal from "./MessageThreadModal";
 import ClearanceDetails from "./ClearanceDetails";
+import ClearanceEditModal from "./ClearanceEditModal";
 import { apiRequest } from "../../utils/ApiService";
 import { useCustomAlert } from "../../utils/CustomAlert";
 
@@ -115,6 +116,7 @@ const Clearances = () => {
 
     const [showModal, setShowModal] = useState(false);
     const [showDetailsModal, setShowDetailsModal] = useState(false);
+    const [showEditModal, setShowEditModal] = useState(false);
 
     const [myClearances, setMyClearances] =
         useState<ClearanceItem[]>([]);
@@ -556,6 +558,17 @@ const Clearances = () => {
                         View
                     </Button>
 
+                    <Button
+                        variant="info"
+                        size="sm"
+                        onClick={() => {
+                            setSelectedClearanceId(row.id);
+                            setShowEditModal(true);
+                        }}
+                    >
+                        Edit
+                    </Button>
+
                     {(row.status || "")
                         .toLowerCase() !==
                         "cleared" && (
@@ -672,6 +685,17 @@ const Clearances = () => {
                             }
                         >
                             View
+                        </Button>
+
+                        <Button
+                            variant="info"
+                            size="sm"
+                            onClick={() => {
+                                setSelectedClearanceId(row.id);
+                                setShowEditModal(true);
+                            }}
+                        >
+                            Edit
                         </Button>
 
                         {(row.status || "")
@@ -892,6 +916,18 @@ const Clearances = () => {
                             }
                         >
                             View Details
+                        </Button>
+
+                        <Button
+                            variant="info"
+                            size="sm"
+                            className="w-100"
+                            onClick={() => {
+                                setSelectedClearanceId(row.id);
+                                setShowEditModal(true);
+                            }}
+                        >
+                            Edit Clearance
                         </Button>
 
                         {!isCleared && (
@@ -1197,6 +1233,23 @@ const Clearances = () => {
                 clearanceId={
                     selectedClearanceId ??
                     0
+                }
+                onUpdated={
+                    fetchClearances
+                }
+            />
+
+            <ClearanceEditModal
+                show={
+                    showEditModal
+                }
+                onHide={() =>
+                    setShowEditModal(
+                        false
+                    )
+                }
+                clearanceId={
+                    selectedClearanceId
                 }
                 onUpdated={
                     fetchClearances
