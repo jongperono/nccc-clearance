@@ -693,114 +693,121 @@ const Dashboard = () => {
                 formatter: (
                     _cell,
                     row
-                ) => (
-                    <div style={{
-                        display: "flex",
-                        gap: isMobile ? "4px" : "8px",
-                        flexWrap: "wrap"
-                    }}>
-                        <Button
-                            variant="success"
-                            size="sm"
-                            onClick={() => {
-                                setSelectedClearanceId(
-                                    row.id
-                                );
+                ) => {
+                    const isCleared = (row.display_status || row.status || "").toLowerCase() === "cleared";
 
-                                setShowDetailsModal(
-                                    true
-                                );
-                            }}
-                            style={{
-                                fontSize:
-                                    isMobile
-                                        ? "8px"
-                                        : isTablet
-                                            ? "11px"
-                                            : "13px",
+                    return (
+                        <div style={{
+                            display: "flex",
+                            gap: isMobile ? "4px" : "8px",
+                            flexWrap: "wrap"
+                        }}>
+                            <Button
+                                variant="success"
+                                size="sm"
+                                onClick={() => {
+                                    setSelectedClearanceId(
+                                        row.id
+                                    );
 
-                                padding:
-                                    isMobile
-                                        ? "3px 8px"
-                                        : "4px 12px",
+                                    setShowDetailsModal(
+                                        true
+                                    );
+                                }}
+                                style={{
+                                    fontSize:
+                                        isMobile
+                                            ? "8px"
+                                            : isTablet
+                                                ? "11px"
+                                                : "13px",
 
-                                minHeight:
-                                    isMobile
-                                        ? "24px"
-                                        : "32px",
+                                    padding:
+                                        isMobile
+                                            ? "3px 8px"
+                                            : "4px 12px",
 
-                                minWidth:
-                                    isMobile
-                                        ? "40px"
-                                        : "60px",
+                                    minHeight:
+                                        isMobile
+                                            ? "24px"
+                                            : "32px",
 
-                                borderRadius:
-                                    isMobile
-                                        ? "4px"
-                                        : "6px",
+                                    minWidth:
+                                        isMobile
+                                            ? "40px"
+                                            : "60px",
 
-                                width:
-                                    isMobile
-                                        ? "100%"
-                                        : "auto"
-                            }}
-                        >
-                            {isMobile
-                                ? "👁"
-                                : "View"}
-                        </Button>
-                        <Button
-                            variant="primary"
-                            size="sm"
-                            onClick={() => {
-                                setSelectedClearanceId(
-                                    row.id
-                                );
+                                    borderRadius:
+                                        isMobile
+                                            ? "4px"
+                                            : "6px",
 
-                                setShowEditModal(
-                                    true
-                                );
-                            }}
-                            style={{
-                                fontSize:
-                                    isMobile
-                                        ? "8px"
-                                        : isTablet
-                                            ? "11px"
-                                            : "13px",
+                                    width:
+                                        isMobile
+                                            ? "100%"
+                                            : "auto"
+                                }}
+                            >
+                                {isMobile
+                                    ? "👁"
+                                    : "View"}
+                            </Button>
 
-                                padding:
-                                    isMobile
-                                        ? "3px 8px"
-                                        : "4px 12px",
+                            {!isCleared && (
+                                <Button
+                                    variant="primary"
+                                    size="sm"
+                                    onClick={() => {
+                                        setSelectedClearanceId(
+                                            row.id
+                                        );
 
-                                minHeight:
-                                    isMobile
-                                        ? "24px"
-                                        : "32px",
+                                        setShowEditModal(
+                                            true
+                                        );
+                                    }}
+                                    style={{
+                                        fontSize:
+                                            isMobile
+                                                ? "8px"
+                                                : isTablet
+                                                    ? "11px"
+                                                    : "13px",
 
-                                minWidth:
-                                    isMobile
-                                        ? "40px"
-                                        : "60px",
+                                        padding:
+                                            isMobile
+                                                ? "3px 8px"
+                                                : "4px 12px",
 
-                                borderRadius:
-                                    isMobile
-                                        ? "4px"
-                                        : "6px",
+                                        minHeight:
+                                            isMobile
+                                                ? "24px"
+                                                : "32px",
 
-                                width:
-                                    isMobile
-                                        ? "100%"
-                                        : "auto"
-                            }}
-                        >
-                            {isMobile
-                                ? "✏️"
-                                : "Edit"}
-                        </Button>
-                    </div>
-                )
+                                        minWidth:
+                                            isMobile
+                                                ? "40px"
+                                                : "60px",
+
+                                        borderRadius:
+                                            isMobile
+                                                ? "4px"
+                                                : "6px",
+
+                                        width:
+                                            isMobile
+                                                ? "100%"
+                                                : "auto"
+                                    }}
+                                >
+                                    {isMobile
+                                        ? "✏️"
+                                        : "Edit"}
+                                </Button>
+                            )}
+                        </div>
+                    );
+                }
             };
 
             // -------------------------------------------------

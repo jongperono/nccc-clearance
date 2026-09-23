@@ -546,32 +546,35 @@ const Clearances = () => {
         {
             dataField: "actions",
             text: "Actions",
-            formatter: (_cell, row) => (
-                <div className="d-flex flex-wrap gap-1">
-                    <Button
-                        variant="success"
-                        size="sm"
-                        onClick={() =>
-                            handleViewDetails(row)
-                        }
-                    >
-                        View
-                    </Button>
+            formatter: (_cell, row) => {
+                const isCleared = (row.status || "").toLowerCase() === "cleared";
 
-                    <Button
-                        variant="info"
-                        size="sm"
-                        onClick={() => {
-                            setSelectedClearanceId(row.id);
-                            setShowEditModal(true);
-                        }}
-                    >
-                        Edit
-                    </Button>
+                return (
+                    <div className="d-flex flex-wrap gap-1">
+                        <Button
+                            variant="success"
+                            size="sm"
+                            onClick={() =>
+                                handleViewDetails(row)
+                            }
+                        >
+                            View
+                        </Button>
 
-                    {(row.status || "")
-                        .toLowerCase() !==
-                        "cleared" && (
+                        {!isCleared && (
+                            <Button
+                                variant="info"
+                                size="sm"
+                                onClick={() => {
+                                    setSelectedClearanceId(row.id);
+                                    setShowEditModal(true);
+                                }}
+                            >
+                                Edit
+                            </Button>
+                        )}
+
+                        {!isCleared && (
                             <Button
                                 variant="primary"
                                 size="sm"
@@ -583,21 +586,22 @@ const Clearances = () => {
                             </Button>
                         )}
 
-                    {!row.is_approved_by_me &&
-                        row.status !== "Approved" &&
-                        row.status !== "Cleared" && (
-                            <Button
-                                variant="success"
-                                size="sm"
-                                onClick={() =>
-                                    handleApprove(row)
-                                }
-                            >
-                                Approve
-                            </Button>
-                        )}
-                </div>
-            )
+                        {!row.is_approved_by_me &&
+                            row.status !== "Approved" &&
+                            !isCleared && (
+                                <Button
+                                    variant="success"
+                                    size="sm"
+                                    onClick={() =>
+                                        handleApprove(row)
+                                    }
+                                >
+                                    Approve
+                                </Button>
+                            )}
+                    </div>
+                );
+            }
         }
     ], [handleViewDetails, handleReviewClick, handleApprove]);
 
@@ -673,34 +677,37 @@ const Clearances = () => {
                 formatter: (
                     _cell,
                     row
-                ) => (
-                    <div className="d-flex flex-wrap gap-1">
-                        <Button
-                            variant="success"
-                            size="sm"
-                            onClick={() =>
-                                handleViewDetails(
-                                    row
-                                )
-                            }
-                        >
-                            View
-                        </Button>
+                ) => {
+                    const isCleared = (row.status || "").toLowerCase() === "cleared";
 
-                        <Button
-                            variant="info"
-                            size="sm"
-                            onClick={() => {
-                                setSelectedClearanceId(row.id);
-                                setShowEditModal(true);
-                            }}
-                        >
-                            Edit
-                        </Button>
+                    return (
+                        <div className="d-flex flex-wrap gap-1">
+                            <Button
+                                variant="success"
+                                size="sm"
+                                onClick={() =>
+                                    handleViewDetails(
+                                        row
+                                    )
+                                }
+                            >
+                                View
+                            </Button>
 
-                        {(row.status || "")
-                            .toLowerCase() !==
-                            "cleared" && (
+                            {!isCleared && (
+                                <Button
+                                    variant="info"
+                                    size="sm"
+                                    onClick={() => {
+                                        setSelectedClearanceId(row.id);
+                                        setShowEditModal(true);
+                                    }}
+                                >
+                                    Edit
+                                </Button>
+                            )}
+
+                            {!isCleared && (
                                 <Button
                                     variant="primary"
                                     size="sm"
@@ -713,8 +720,9 @@ const Clearances = () => {
                                     Remarks
                                 </Button>
                             )}
-                    </div>
-                )
+                        </div>
+                    );
+                }
             };
         }
 
@@ -918,17 +926,19 @@ const Clearances = () => {
                             View Details
                         </Button>
 
-                        <Button
-                            variant="info"
-                            size="sm"
-                            className="w-100"
-                            onClick={() => {
-                                setSelectedClearanceId(row.id);
-                                setShowEditModal(true);
-                            }}
-                        >
-                            Edit Clearance
-                        </Button>
+                        {!isCleared && (
+                            <Button
+                                variant="info"
+                                size="sm"
+                                className="w-100"
+                                onClick={() => {
+                                    setSelectedClearanceId(row.id);
+                                    setShowEditModal(true);
+                                }}
+                            >
+                                Edit Clearance
+                            </Button>
+                        )}
 
                         {!isCleared && (
                             <Button
