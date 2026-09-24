@@ -595,47 +595,18 @@ const TemplatePreviewModal: React.FC<TemplatePreviewModalProps> = ({
                                                                 )}
                                                             </div>
 
-                                                            {/* Remarks */}
-                                                            <div
+                                                            {/* Delete Button */}
+                                                            <Button
+                                                                variant="danger"
+                                                                size="sm"
                                                                 style={{
-                                                                    flex: 2,
-                                                                    minWidth: "100px",
+                                                                    padding: "4px 12px",
                                                                     fontSize: "12px",
-                                                                    color: "#475569",
+                                                                    borderRadius: "6px",
                                                                 }}
                                                             >
-                                                                <div
-                                                                    style={{
-                                                                        fontSize: "9px",
-                                                                        fontWeight: 700,
-                                                                        color: "#94a3b8",
-                                                                        textTransform: "uppercase",
-                                                                        letterSpacing: "0.06em",
-                                                                        marginBottom: "2px",
-                                                                    }}
-                                                                >
-                                                                    Remarks
-                                                                </div>
-                                                                <div>{sig._remarks}</div>
-                                                            </div>
-
-                                                            {/* Status badge — always "Pending" for a new template */}
-                                                            <div
-                                                                style={{
-                                                                    background: "#fef9c3",
-                                                                    color: "#854d0e",
-                                                                    border: "1px solid #fde047",
-                                                                    borderRadius: "20px",
-                                                                    padding: "3px 12px",
-                                                                    fontSize: "11px",
-                                                                    fontWeight: 700,
-                                                                    textTransform: "uppercase",
-                                                                    letterSpacing: "0.06em",
-                                                                    whiteSpace: "nowrap",
-                                                                }}
-                                                            >
-                                                                Pending
-                                                            </div>
+                                                                🗑️ Delete
+                                                            </Button>
                                                         </div>
                                                     );
                                                 })}
