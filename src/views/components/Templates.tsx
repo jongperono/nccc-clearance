@@ -34,7 +34,7 @@ interface TemplateData {
     updater_employee_id?: number;
     creator_name?: string;
     updater_name?: string;
-    createdAt?: string;  
+    createdAt?: string;
 }
 
 const Template: React.FC = () => {
@@ -85,7 +85,8 @@ const Template: React.FC = () => {
             title: template.title,
             purpose: template.purpose,
             footer_message: template.footer_message ?? "",
-            creator_employee_id: template.creator_employee_id
+            creator_employee_id: template.creator_employee_id,
+            template_id: template.template_id
         });
         try {
             const signatoryResponse = await apiRequest(`/template/${template.template_id}/signatories`, "GET") as any;
@@ -124,7 +125,7 @@ const Template: React.FC = () => {
         fetchTemplates();
     }, []);
 
-    const columns: ColumnDefinition<TemplateData & {creator_email?: string}>[] = [
+    const columns: ColumnDefinition<TemplateData & { creator_email?: string }>[] = [
         {
             dataField: "title",
             text: "Template Title", // changed here

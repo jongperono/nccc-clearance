@@ -15,6 +15,7 @@ interface TemplateData {
     purpose: string;
     footer_message?: string;
     creator_employee_id?: number | string;
+    template_id?: number;
 }
 
 interface TemplatePreviewModalProps {
@@ -26,6 +27,8 @@ interface TemplatePreviewModalProps {
     formDataWithIds?: any;
     onConfirm?: () => void;
     showConfirmButton?: boolean;
+    onRemoveSignatory?: (signatoryId: string) => void;
+    templateId?: number;
 }
 
 const TemplatePreviewModal: React.FC<TemplatePreviewModalProps> = ({
@@ -36,9 +39,12 @@ const TemplatePreviewModal: React.FC<TemplatePreviewModalProps> = ({
     selectedSignatories,
     formDataWithIds,
     showConfirmButton = true,
+    onRemoveSignatory,
+    templateId,
 }) => {
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [error, setError] = useState<string | null>(null);
+    const [localSignatories, setLocalSignatories] = useState<Signatory[]>(selectedSignatories);
     const [creator, setCreator] = useState<{
         id: string;
         name: string;
@@ -54,6 +60,10 @@ const TemplatePreviewModal: React.FC<TemplatePreviewModalProps> = ({
         department: "-",
         datePrepared: new Date().toLocaleDateString(),
     });
+
+    useEffect(() => {
+        setLocalSignatories(selectedSignatories);
+    }, [selectedSignatories]);
 
     useEffect(() => {
         const employeeId =
@@ -83,12 +93,50 @@ const TemplatePreviewModal: React.FC<TemplatePreviewModalProps> = ({
             .catch(() => { });
     }, [templateData?.creator_employee_id]);
 
+    const handleRemoveSignatory = async (signatoryId: string) => {
+        // If we have a templateId, this is an existing template - delete from database
+        if (templateId || templateData.template_id) {
+            const actualTemplateId = templateId || templateData.template_id;
+            try {
+                await apiRequest(
+                    `/template/${actualTemplateId}/signatory/${signatoryId}`,
+                    "DELETE"
+                );
+
+                // Update local state after successful deletion
+                const updatedSignatories = localSignatories.filter(
+                    (sig) => (sig.id || (sig as any).employee_id) !== signatoryId
+                );
+                setLocalSignatories(updatedSignatories);
+
+                // Call parent callback if provided
+                if (onRemoveSignatory) {
+                    onRemoveSignatory(signatoryId);
+                }
+            } catch (error) {
+                console.error('Error removing signatory:', error);
+                setError('Failed to remove signatory');
+            }
+        } else {
+            // This is a new template (preview before creation) - just update local state
+            const updatedSignatories = localSignatories.filter(
+                (sig) => (sig.id || (sig as any).employee_id) !== signatoryId
+            );
+            setLocalSignatories(updatedSignatories);
+
+            // Call parent callback if provided
+            if (onRemoveSignatory) {
+                onRemoveSignatory(signatoryId);
+            }
+        }
+    };
+
     const handleConfirm = async () => {
         try {
             setIsSubmitting(true);
             setError(null);
 
-            const signatoryIds = selectedSignatories.map(
+            const signatoryIds = localSignatories.map(
                 (sig: any) => sig.id || sig.employee_id
             );
 
@@ -179,7 +227,7 @@ const TemplatePreviewModal: React.FC<TemplatePreviewModalProps> = ({
 
     // Group signatories by a "department" key (use a placeholder since template
     // signatories may not carry department info yet)
-    const signatoryList = (selectedSignatories as any[]).map((sig) => ({
+    const signatoryList = (localSignatories as any[]).map((sig) => ({
         ...sig,
         _name:
             sig.full_name ||
@@ -453,11 +501,11 @@ const TemplatePreviewModal: React.FC<TemplatePreviewModalProps> = ({
                                     fontWeight: 600,
                                 }}
                             >
-                                {selectedSignatories.length}
+                                {localSignatories.length}
                             </span>
                         </div>
 
-                        {selectedSignatories.length === 0 ? (
+                        {localSignatories.length === 0 ? (
                             <div
                                 style={{
                                     textAlign: "center",
@@ -599,13 +647,14 @@ const TemplatePreviewModal: React.FC<TemplatePreviewModalProps> = ({
                                                             <Button
                                                                 variant="danger"
                                                                 size="sm"
+                                                                onClick={() => handleRemoveSignatory(sig.id ?? sig.employee_id)}
                                                                 style={{
                                                                     padding: "4px 12px",
                                                                     fontSize: "12px",
                                                                     borderRadius: "6px",
                                                                 }}
                                                             >
-                                                                🗑️ Delete
+                                                                🗑️ Remove
                                                             </Button>
                                                         </div>
                                                     );
