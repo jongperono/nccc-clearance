@@ -61,21 +61,22 @@ const Dashboard: React.FC = () => {
         Company: <Company />,
         Employee: <Employee />,
         Roles: <Roles />,
-        Departments:<Departments/>,
-        Branches: <Branches/>,
+        Departments: <Departments />,
+        Branches: <Branches />,
     };
 
     return (
-        <Container fluid className="d-flex p-0">
+        // <Container fluid className="d-flex p-0">
+        <Container fluid className="dashboard-content">
             {/* Sidebar with responsive width */}
             <div className={`sidebar-container ${showSidebar ? 'show' : ''}`}>
                 <Sidebar onSelect={handlePageSelect} />
             </div>
-    
+
             {/* Main Content */}
             <div className="dashboard-content">
                 {isMobile && (
-                    <button 
+                    <button
                         className="btn btn-sm btn-primary mb-3"
                         onClick={toggleSidebar}
                     >
@@ -86,8 +87,8 @@ const Dashboard: React.FC = () => {
             </div>
 
             {/* Change Password Modal */}
-            <ChangePasswordModal 
-                show={showChangePasswordModal} 
+            <ChangePasswordModal
+                show={showChangePasswordModal}
                 onHide={() => setShowChangePasswordModal(false)}
                 employeeId={employeeId}
             />
