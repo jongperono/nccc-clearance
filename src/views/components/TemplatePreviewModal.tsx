@@ -49,6 +49,7 @@ const TemplatePreviewModal: React.FC<TemplatePreviewModalProps> = ({
     const [availableSignatories, setAvailableSignatories] = useState<any[]>([]);
     const [loadingSignatories, setLoadingSignatories] = useState(false);
     const [tempSelectedSignatories, setTempSelectedSignatories] = useState<any[]>([]);
+    const [searchQuery, setSearchQuery] = useState("");
     const [creator, setCreator] = useState<{
         id: string;
         name: string;
@@ -138,6 +139,7 @@ const TemplatePreviewModal: React.FC<TemplatePreviewModalProps> = ({
     const handleAddSignatoryClick = async () => {
         setLoadingSignatories(true);
         setError(null);
+        setSearchQuery(""); // Reset search when opening modal
         try {
             const response = await apiRequest<{ data: { data: any[], success: boolean, message: string } }>('/signatories', 'GET');
 
@@ -313,6 +315,18 @@ const TemplatePreviewModal: React.FC<TemplatePreviewModalProps> = ({
         { header: "#1e3a5f", light: "#fef9c3", accent: "#a16207" },
         { header: "#1f2937", light: "#f1f5f9", accent: "#475569" },
     ];
+
+    // Filter available signatories based on search query
+    const filteredAvailableSignatories = availableSignatories.filter((signatory) => {
+        const searchLower = searchQuery.toLowerCase();
+        return (
+            signatory.full_name?.toLowerCase().includes(searchLower) ||
+            signatory.employee_id?.toString().includes(searchLower) ||
+            signatory.department?.toLowerCase().includes(searchLower) ||
+            signatory.branch?.toLowerCase().includes(searchLower) ||
+            signatory.company?.toLowerCase().includes(searchLower)
+        );
+    });
 
     // Group signatories by a "department" key (use a placeholder since template
     // signatories may not carry department info yet)
@@ -826,7 +840,10 @@ const TemplatePreviewModal: React.FC<TemplatePreviewModalProps> = ({
             {/* Add Signatory Modal */}
             <Modal
                 show={showAddSignatoryModal}
-                onHide={() => setShowAddSignatoryModal(false)}
+                onHide={() => {
+                    setShowAddSignatoryModal(false);
+                    setSearchQuery("");
+                }}
                 size="lg"
             >
                 <Modal.Header
@@ -838,14 +855,63 @@ const TemplatePreviewModal: React.FC<TemplatePreviewModalProps> = ({
                     </Modal.Title>
                 </Modal.Header>
                 <Modal.Body>
+                    {/* Search Input */}
+                    <div style={{ marginBottom: "16px" }}>
+                        <div style={{ position: "relative" }}>
+                            <input
+                                type="text"
+                                className="form-control"
+                                placeholder="🔍 Search by name, ID, department, branch..."
+                                value={searchQuery}
+                                onChange={(e) => setSearchQuery(e.target.value)}
+                                style={{
+                                    padding: "10px 40px 10px 16px",
+                                    fontSize: "14px",
+                                    borderRadius: "8px",
+                                    border: "1px solid #e2e8f0",
+                                }}
+                            />
+                            {searchQuery && (
+                                <button
+                                    onClick={() => setSearchQuery("")}
+                                    style={{
+                                        position: "absolute",
+                                        right: "10px",
+                                        top: "50%",
+                                        transform: "translateY(-50%)",
+                                        background: "transparent",
+                                        border: "none",
+                                        cursor: "pointer",
+                                        fontSize: "18px",
+                                        color: "#94a3b8",
+                                        padding: "0 5px",
+                                    }}
+                                    title="Clear search"
+                                >
+                                    ✕
+                                </button>
+                            )}
+                        </div>
+                        {searchQuery && (
+                            <div style={{ fontSize: "12px", color: "#64748b", marginTop: "8px" }}>
+                                Found {filteredAvailableSignatories.length} signator{filteredAvailableSignatories.length === 1 ? 'y' : 'ies'}
+                            </div>
+                        )}
+                    </div>
+
                     {availableSignatories.length === 0 ? (
                         <div style={{ textAlign: "center", padding: "32px 16px", color: "#94a3b8" }}>
                             <div style={{ fontSize: "32px", marginBottom: "8px" }}>✅</div>
                             <div style={{ fontSize: "14px" }}>All available signatories have been added.</div>
                         </div>
+                    ) : filteredAvailableSignatories.length === 0 ? (
+                        <div style={{ textAlign: "center", padding: "32px 16px", color: "#94a3b8" }}>
+                            <div style={{ fontSize: "32px", marginBottom: "8px" }}>🔍</div>
+                            <div style={{ fontSize: "14px" }}>No signatories match your search.</div>
+                        </div>
                     ) : (
                         <div style={{ maxHeight: "400px", overflow: "auto" }}>
-                            {availableSignatories.map((signatory) => (
+                            {filteredAvailableSignatories.map((signatory) => (
                                 <div
                                     key={signatory.employee_id}
                                     onClick={() => handleSelectSignatory(signatory)}
@@ -893,7 +959,13 @@ const TemplatePreviewModal: React.FC<TemplatePreviewModalProps> = ({
                     )}
                 </Modal.Body>
                 <Modal.Footer>
-                    <Button variant="secondary" onClick={() => setShowAddSignatoryModal(false)}>
+                    <Button
+                        variant="secondary"
+                        onClick={() => {
+                            setShowAddSignatoryModal(false);
+                            setSearchQuery("");
+                        }}
+                    >
                         Cancel
                     </Button>
                     <Button
