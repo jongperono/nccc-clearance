@@ -1078,22 +1078,24 @@ const ClearanceDetails: React.FC<ClearanceDetailsProps> = ({
                                                                                                 alignSelf: "flex-start",
                                                                                             }}>
                                                                                                 ✅ You approved
-                                                                                                <span style={{
-                                                                                                    marginLeft: "4px",
-                                                                                                    cursor: "pointer",
-                                                                                                    fontSize: "12px",
-                                                                                                    lineHeight: "1",
-                                                                                                    opacity: "0.7",
-                                                                                                    transition: "opacity 0.2s"
-                                                                                                }}
-                                                                                                    onClick={(e) => {
-                                                                                                        e.stopPropagation();
-                                                                                                        handleUnapprove();
+                                                                                                {(clearance?.clearance_status || "").toLowerCase() !== "cleared" && (
+                                                                                                    <span style={{
+                                                                                                        marginLeft: "4px",
+                                                                                                        cursor: "pointer",
+                                                                                                        fontSize: "12px",
+                                                                                                        lineHeight: "1",
+                                                                                                        opacity: "0.7",
+                                                                                                        transition: "opacity 0.2s"
                                                                                                     }}
-                                                                                                    onMouseEnter={(e) => e.currentTarget.style.opacity = "1"}
-                                                                                                    onMouseLeave={(e) => e.currentTarget.style.opacity = "0.7"}>
-                                                                                                    ✕
-                                                                                                </span>
+                                                                                                        onClick={(e) => {
+                                                                                                            e.stopPropagation();
+                                                                                                            handleUnapprove();
+                                                                                                        }}
+                                                                                                        onMouseEnter={(e) => e.currentTarget.style.opacity = "1"}
+                                                                                                        onMouseLeave={(e) => e.currentTarget.style.opacity = "0.7"}>
+                                                                                                        ✕
+                                                                                                    </span>
+                                                                                                )}
                                                                                             </div>
                                                                                         ) : (
                                                                                             <button
