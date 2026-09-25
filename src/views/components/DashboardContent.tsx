@@ -325,6 +325,73 @@ const Dashboard = () => {
     };
 
     // ---------------------------------------------------------
+    // HANDLE CLEARANCE UPDATED (FROM MODALS)
+    // ---------------------------------------------------------
+
+    const handleClearanceUpdated = (clearanceId: number) => {
+        // Only fetch the specific clearance that was updated, not the entire list
+        const fetchUpdatedClearance = async () => {
+            try {
+                const response = await apiRequest(`/clearance/${clearanceId}/details`, "GET") as any;
+                const updatedData = response?.data?.data || response?.data;
+                const updatedClearance = updatedData?.clearance;
+
+                if (updatedClearance) {
+                    // Update the specific clearance in local state
+                    setClearances(prevClearances =>
+                        prevClearances.map(clearance => {
+                            if (clearance.id === clearanceId) {
+                                // Map the updated data to match the ClearanceItem interface
+                                const overallStatus =
+                                    updatedClearance.clearance_status ?? "Pending";
+
+                                const isApprovedByMe =
+                                    updatedData.signatories?.some((s: any) =>
+                                        (s.Employee?.employee_id === currentEmployeeId) &&
+                                        s.is_approved === true
+                                    ) ?? false;
+
+                                let displayStatus: string;
+                                if (overallStatus?.toLowerCase() === "cleared") {
+                                    displayStatus = "Cleared";
+                                } else if (isApprovedByMe) {
+                                    displayStatus = "Approved";
+                                } else {
+                                    displayStatus = overallStatus;
+                                }
+
+                                return {
+                                    ...clearance,
+                                    status: overallStatus,
+                                    display_status: displayStatus,
+                                    is_approved_by_me: isApprovedByMe,
+                                    // Update other fields that might have changed
+                                    name: [
+                                        updatedClearance.first_name ?? "",
+                                        updatedClearance.middle_name ?? "",
+                                        updatedClearance.last_name ?? ""
+                                    ].filter(Boolean).join(" ") || clearance.name,
+                                    position: updatedClearance.position ?? clearance.position,
+                                    effectivity_date: updatedClearance.effectivity_date
+                                        ? new Date(updatedClearance.effectivity_date).toLocaleDateString()
+                                        : clearance.effectivity_date,
+                                    purpose: updatedClearance.purpose ?? clearance.purpose,
+                                };
+                            }
+                            return clearance;
+                        })
+                    );
+                }
+            } catch (error) {
+                console.error("Failed to fetch updated clearance:", error);
+                // Silently fail - the user can refresh manually if needed
+            }
+        };
+
+        fetchUpdatedClearance();
+    };
+
+    // ---------------------------------------------------------
     // FETCH CURRENT EMPLOYEE ID
     // ---------------------------------------------------------
 
@@ -1416,16 +1483,17 @@ const Dashboard = () => {
                     setShowDetailsModal(
                         false
                     );
-
-                    fetchClearances();
                 }}
                 clearanceId={
                     selectedClearanceId ??
                     0
                 }
-                onUpdated={
-                    fetchClearances
-                }
+                onUpdated={() => {
+                    // Only fetch updated data for this specific clearance
+                    if (selectedClearanceId) {
+                        handleClearanceUpdated(selectedClearanceId);
+                    }
+                }}
             />
 
             <ClearanceEditModal
@@ -1440,9 +1508,12 @@ const Dashboard = () => {
                 clearanceId={
                     selectedClearanceId
                 }
-                onUpdated={
-                    fetchClearances
-                }
+                onUpdated={() => {
+                    // Only fetch updated data for this specific clearance
+                    if (selectedClearanceId) {
+                        handleClearanceUpdated(selectedClearanceId);
+                    }
+                }}
             />
         </div>
     );
