@@ -270,7 +270,11 @@ const Dashboard = () => {
         try {
             await apiRequest(`/clearances/${clearanceId}`, "DELETE");
             showAlert("success", "Clearance deleted successfully.");
-            fetchClearances(); // Refresh the list
+
+            // Update local state by removing the deleted clearance
+            setClearances(prevClearances =>
+                prevClearances.filter(clearance => clearance.id !== clearanceId)
+            );
         } catch (error: any) {
             showAlert(
                 "error",
@@ -298,7 +302,20 @@ const Dashboard = () => {
                 "Clearance approved successfully."
             );
 
-            fetchClearances(); // Refresh the list
+            // Update local state by marking as approved and removing from "in progress"
+            setClearances(prevClearances =>
+                prevClearances.map(clearance => {
+                    if (clearance.id === clearanceId) {
+                        return {
+                            ...clearance,
+                            is_approved_by_me: true,
+                            display_status: "Approved",
+                            status: "Approved"
+                        };
+                    }
+                    return clearance;
+                })
+            );
         } catch (error: any) {
             showAlert(
                 "error",
