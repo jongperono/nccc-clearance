@@ -280,6 +280,34 @@ const Dashboard = () => {
     };
 
     // ---------------------------------------------------------
+    // APPROVE CLEARANCE
+    // ---------------------------------------------------------
+
+    const handleApproveClearance = async (clearanceId: number) => {
+        try {
+            await apiRequest(
+                "/my-clearance/approve",
+                "PUT",
+                {
+                    clearance_id: clearanceId
+                }
+            );
+
+            showAlert(
+                "success",
+                "Clearance approved successfully."
+            );
+
+            fetchClearances(); // Refresh the list
+        } catch (error: any) {
+            showAlert(
+                "error",
+                error?.response?.data?.message || "Failed to approve clearance."
+            );
+        }
+    };
+
+    // ---------------------------------------------------------
     // FETCH CURRENT EMPLOYEE ID
     // ---------------------------------------------------------
 
@@ -741,6 +769,8 @@ const Dashboard = () => {
                 ) => {
                     const isCleared = (row.display_status || row.status || "").toLowerCase() === "cleared";
                     const isAssignedByMe = currentEmployeeId !== null && row.assigned_by === currentEmployeeId;
+                    const isApprovedByMe = row.is_approved_by_me === true;
+                    const canApprove = !isCleared && !isApprovedByMe && row.display_status?.toLowerCase() !== "approved";
 
                     return (
                         <div style={{
@@ -798,6 +828,51 @@ const Dashboard = () => {
                                     ? "👁"
                                     : "View"}
                             </Button>
+
+                            {canApprove && (
+                                <Button
+                                    variant="info"
+                                    size="sm"
+                                    onClick={() => handleApproveClearance(row.id)}
+                                    style={{
+                                        fontSize:
+                                            isMobile
+                                                ? "8px"
+                                                : isTablet
+                                                    ? "11px"
+                                                    : "13px",
+
+                                        padding:
+                                            isMobile
+                                                ? "3px 8px"
+                                                : "4px 12px",
+
+                                        minHeight:
+                                            isMobile
+                                                ? "24px"
+                                                : "32px",
+
+                                        minWidth:
+                                            isMobile
+                                                ? "40px"
+                                                : "60px",
+
+                                        borderRadius:
+                                            isMobile
+                                                ? "4px"
+                                                : "6px",
+
+                                        width:
+                                            isMobile
+                                                ? "100%"
+                                                : "auto"
+                                    }}
+                                >
+                                    {isMobile
+                                        ? "✓"
+                                        : "Approve"}
+                                </Button>
+                            )}
 
                             {!isCleared && isAssignedByMe && (
                                 <Button
