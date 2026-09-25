@@ -259,6 +259,27 @@ const Dashboard = () => {
     }, []);
 
     // ---------------------------------------------------------
+    // DELETE CLEARANCE
+    // ---------------------------------------------------------
+
+    const handleDeleteClearance = async (clearanceId: number) => {
+        if (!window.confirm("Are you sure you want to delete this clearance? This action cannot be undone.")) {
+            return;
+        }
+
+        try {
+            await apiRequest(`/clearances/${clearanceId}`, "DELETE");
+            showAlert("success", "Clearance deleted successfully.");
+            fetchClearances(); // Refresh the list
+        } catch (error: any) {
+            showAlert(
+                "error",
+                error?.response?.data?.message || "Failed to delete clearance."
+            );
+        }
+    };
+
+    // ---------------------------------------------------------
     // FETCH CURRENT EMPLOYEE ID
     // ---------------------------------------------------------
 
@@ -828,6 +849,51 @@ const Dashboard = () => {
                                     {isMobile
                                         ? "✏️"
                                         : "Edit"}
+                                </Button>
+                            )}
+
+                            {!isCleared && isAssignedByMe && (
+                                <Button
+                                    variant="danger"
+                                    size="sm"
+                                    onClick={() => handleDeleteClearance(row.id)}
+                                    style={{
+                                        fontSize:
+                                            isMobile
+                                                ? "8px"
+                                                : isTablet
+                                                    ? "11px"
+                                                    : "13px",
+
+                                        padding:
+                                            isMobile
+                                                ? "3px 8px"
+                                                : "4px 12px",
+
+                                        minHeight:
+                                            isMobile
+                                                ? "24px"
+                                                : "32px",
+
+                                        minWidth:
+                                            isMobile
+                                                ? "40px"
+                                                : "60px",
+
+                                        borderRadius:
+                                            isMobile
+                                                ? "4px"
+                                                : "6px",
+
+                                        width:
+                                            isMobile
+                                                ? "100%"
+                                                : "auto"
+                                    }}
+                                >
+                                    {isMobile
+                                        ? "🗑️"
+                                        : "Delete"}
                                 </Button>
                             )}
                         </div>

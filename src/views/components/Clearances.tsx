@@ -477,6 +477,27 @@ const Clearances = () => {
     }, [clearTarget, showAlert]);
 
     // ---------------------------------------------------------
+    // DELETE CLEARANCE
+    // ---------------------------------------------------------
+
+    const handleDeleteClearance = useCallback(async (clearanceId: number) => {
+        if (!window.confirm("Are you sure you want to delete this clearance? This action cannot be undone.")) {
+            return;
+        }
+
+        try {
+            await apiRequest(`/clearances/${clearanceId}`, "DELETE");
+            showAlert("success", "Clearance deleted successfully.");
+            fetchClearances(); // Refresh the list
+        } catch (error: any) {
+            showAlert(
+                "error",
+                error?.response?.data?.message || "Failed to delete clearance."
+            );
+        }
+    }, [showAlert]);
+
+    // ---------------------------------------------------------
     // DESKTOP TABLE COLUMNS
     // ---------------------------------------------------------
 
@@ -612,6 +633,18 @@ const Clearances = () => {
                                     Approve
                                 </Button>
                             )}
+
+                        {!isCleared && isAssignedByMe && (
+                            <Button
+                                variant="danger"
+                                size="sm"
+                                onClick={() =>
+                                    handleDeleteClearance(row.id)
+                                }
+                            >
+                                Delete
+                            </Button>
+                        )}
                     </div>
                 );
             }
@@ -732,6 +765,18 @@ const Clearances = () => {
                                     }
                                 >
                                     Remarks
+                                </Button>
+                            )}
+
+                            {!isCleared && isAssignedByMe && (
+                                <Button
+                                    variant="danger"
+                                    size="sm"
+                                    onClick={() =>
+                                        handleDeleteClearance(row.id)
+                                    }
+                                >
+                                    Delete
                                 </Button>
                             )}
                         </div>
@@ -1015,11 +1060,24 @@ const Clearances = () => {
                             </Button>
                         )}
 
+                        {!isCleared && isAssignedByMe && (
+                            <Button
+                                variant="danger"
+                                size="sm"
+                                className="w-100"
+                                onClick={() =>
+                                    handleDeleteClearance(row.id)
+                                }
+                            >
+                                Delete
+                            </Button>
+                        )}
+
                     </div>
                 </div>
             </div>
         );
-    }, [handleViewDetails, handleReviewClick, handleApprove, canClearClearances, handleClear, currentEmployeeId]);
+    }, [handleViewDetails, handleReviewClick, handleApprove, canClearClearances, handleClear, handleDeleteClearance, currentEmployeeId]);
 
     // ---------------------------------------------------------
     // LOADING

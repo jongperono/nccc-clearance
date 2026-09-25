@@ -24,6 +24,8 @@ interface ClearanceRequest {
     effectivity_date: string;
     position: string;
     immediate_head: string;
+    assigned_by?: number | null;
+    clearance_status?: string;
 }
 
 interface NewClearanceRequest {
@@ -101,6 +103,7 @@ const ClearanceRequest: React.FC = () => {
     const [selectedRequest, setSelectedRequest] = useState<ClearanceRequest | null>(null);
     const [filteredTemplates, setFilteredTemplates] = useState<TemplateData[]>([]);
     const [assigning, setAssigning] = useState(false);
+    const [currentEmployeeId, setCurrentEmployeeId] = useState<number | null>(null);
     // const [templates, setTemplates] = useState<TemplateData[]>([]);
     // --- Template Preview Modal State ---
     const [showViewModal, setShowViewModal] = useState(false);
@@ -109,6 +112,21 @@ const ClearanceRequest: React.FC = () => {
 
     // --- Alert ---
     const { showAlert, AlertComponent } = useCustomAlert();
+
+    // --- Fetch Current Employee ID ---
+    useEffect(() => {
+        const fetchCurrentEmployee = async () => {
+            try {
+                const response = await apiRequest<any>("/check-permissions", "GET");
+                const perms = response?.data?.data || {};
+                setCurrentEmployeeId(perms.employee_id ?? null);
+            } catch (error) {
+                console.error("Failed to fetch current employee:", error);
+            }
+        };
+
+        fetchCurrentEmployee();
+    }, []);
 
     // --- Table Columns ---
     const columns: ColumnDefinition<ClearanceRequest>[] = [
@@ -122,15 +140,31 @@ const ClearanceRequest: React.FC = () => {
         {
             dataField: "id",
             text: "Action",
-            formatter: (_cell: string | number | undefined, row: ClearanceRequest) => (
-                <Button
-                    variant="success"
-                    size="sm"
-                    onClick={() => handleAssignClick(row)}
-                >
-                    Assign
-                </Button>
-            )
+            formatter: (_cell: string | number | undefined, row: ClearanceRequest) => {
+                const isCleared = (row.clearance_status || "").toLowerCase() === "cleared";
+                const isAssignedByMe = currentEmployeeId !== null && row.assigned_by === currentEmployeeId;
+
+                return (
+                    <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
+                        <Button
+                            variant="success"
+                            size="sm"
+                            onClick={() => handleAssignClick(row)}
+                        >
+                            Assign
+                        </Button>
+                        {!isCleared && isAssignedByMe && (
+                            <Button
+                                variant="danger"
+                                size="sm"
+                                onClick={() => handleDeleteClearance(row.id)}
+                            >
+                                Delete
+                            </Button>
+                        )}
+                    </div>
+                );
+            }
         }
     ];
 
@@ -252,6 +286,24 @@ const ClearanceRequest: React.FC = () => {
         setSelectedRequest(request);
         setShowAssignModal(true);
         fetchTemplatesForRequest(request.id);
+    };
+
+    // --- Delete Clearance ---
+    const handleDeleteClearance = async (clearanceId: number) => {
+        if (!window.confirm("Are you sure you want to delete this clearance request? This action cannot be undone.")) {
+            return;
+        }
+
+        try {
+            await apiRequest(`/clearances/${clearanceId}`, "DELETE");
+            showAlert("success", "Clearance request deleted successfully.");
+            fetchRequests(); // Refresh the list
+        } catch (error: any) {
+            showAlert(
+                "error",
+                error?.response?.data?.message || "Failed to delete clearance request."
+            );
+        }
     };
 
     // --- View Template Preview ---
@@ -379,6 +431,8 @@ const ClearanceRequest: React.FC = () => {
                 effectivity_date: r.effectivity_date || "N/A",
                 position: r.position || "N/A",
                 immediate_head: r.immediate_head || "N/A",
+                assigned_by: r.assigned_by ?? null,
+                clearance_status: r.clearance_status || "Pending"
             }));
             setRequests(transformedData);
         } catch {
