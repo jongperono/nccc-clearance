@@ -15,6 +15,7 @@ interface TemplateData {
     purpose: string;
     footer_message?: string;
     creator_employee_id?: number | string;
+    template_id?: number;
 }
 
 interface TemplatePreviewModalProps {
@@ -26,6 +27,8 @@ interface TemplatePreviewModalProps {
     formDataWithIds?: any;
     onConfirm?: () => void;
     showConfirmButton?: boolean;
+    onRemoveSignatory?: (signatoryId: string) => void;
+    templateId?: number;
 }
 
 const TemplatePreviewModal: React.FC<TemplatePreviewModalProps> = ({
@@ -36,9 +39,17 @@ const TemplatePreviewModal: React.FC<TemplatePreviewModalProps> = ({
     selectedSignatories,
     formDataWithIds,
     showConfirmButton = true,
+    onRemoveSignatory,
+    templateId,
 }) => {
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [error, setError] = useState<string | null>(null);
+    const [localSignatories, setLocalSignatories] = useState<Signatory[]>(selectedSignatories);
+    const [showAddSignatoryModal, setShowAddSignatoryModal] = useState(false);
+    const [availableSignatories, setAvailableSignatories] = useState<any[]>([]);
+    const [loadingSignatories, setLoadingSignatories] = useState(false);
+    const [tempSelectedSignatories, setTempSelectedSignatories] = useState<any[]>([]);
+    const [searchQuery, setSearchQuery] = useState("");
     const [creator, setCreator] = useState<{
         id: string;
         name: string;
@@ -54,6 +65,10 @@ const TemplatePreviewModal: React.FC<TemplatePreviewModalProps> = ({
         department: "-",
         datePrepared: new Date().toLocaleDateString(),
     });
+
+    useEffect(() => {
+        setLocalSignatories(selectedSignatories);
+    }, [selectedSignatories]);
 
     useEffect(() => {
         const employeeId =
@@ -83,12 +98,136 @@ const TemplatePreviewModal: React.FC<TemplatePreviewModalProps> = ({
             .catch(() => { });
     }, [templateData?.creator_employee_id]);
 
+    const handleRemoveSignatory = async (signatoryId: string) => {
+        // If we have a templateId, this is an existing template - delete from database
+        if (templateId || templateData.template_id) {
+            const actualTemplateId = templateId || templateData.template_id;
+            try {
+                await apiRequest(
+                    `/template/${actualTemplateId}/signatory/${signatoryId}`,
+                    "DELETE"
+                );
+
+                // Update local state after successful deletion
+                const updatedSignatories = localSignatories.filter(
+                    (sig) => (sig.id || (sig as any).employee_id) !== signatoryId
+                );
+                setLocalSignatories(updatedSignatories);
+
+                // Call parent callback if provided
+                if (onRemoveSignatory) {
+                    onRemoveSignatory(signatoryId);
+                }
+            } catch (error) {
+                console.error('Error removing signatory:', error);
+                setError('Failed to remove signatory');
+            }
+        } else {
+            // This is a new template (preview before creation) - just update local state
+            const updatedSignatories = localSignatories.filter(
+                (sig) => (sig.id || (sig as any).employee_id) !== signatoryId
+            );
+            setLocalSignatories(updatedSignatories);
+
+            // Call parent callback if provided
+            if (onRemoveSignatory) {
+                onRemoveSignatory(signatoryId);
+            }
+        }
+    };
+
+    const handleAddSignatoryClick = async () => {
+        setLoadingSignatories(true);
+        setError(null);
+        setSearchQuery(""); // Reset search when opening modal
+        try {
+            const response = await apiRequest<{ data: { data: any[], success: boolean, message: string } }>('/signatories', 'GET');
+
+            if (response.data.success) {
+                // Filter out already selected signatories
+                const mappedSignatories = response.data.data
+                    .filter(signatory =>
+                        !localSignatories.some(selected =>
+                            (selected.id || (selected as any).employee_id) === signatory.employee_id
+                        )
+                    )
+                    .map(signatory => ({
+                        ...signatory,
+                        company: signatory.company_id,
+                        department: signatory.department_id,
+                        branch: signatory.branch_id,
+                    }));
+                setAvailableSignatories(mappedSignatories);
+                setTempSelectedSignatories([]);
+                setShowAddSignatoryModal(true);
+            } else {
+                setError('Failed to load signatories: ' + response.data.message);
+            }
+        } catch (err) {
+            setError('Error loading signatories. Please try again.');
+            console.error('Error fetching signatories:', err);
+        } finally {
+            setLoadingSignatories(false);
+        }
+    };
+
+    const handleSelectSignatory = (signatory: any) => {
+        if (tempSelectedSignatories.some(s => s.employee_id === signatory.employee_id)) {
+            setTempSelectedSignatories(prev => prev.filter(s => s.employee_id !== signatory.employee_id));
+        } else {
+            setTempSelectedSignatories(prev => [...prev, signatory]);
+        }
+    };
+
+    const handleAddSelectedSignatories = async () => {
+        if (templateId || templateData.template_id) {
+            // Existing template - add to database
+            const actualTemplateId = templateId || templateData.template_id;
+            try {
+                // Add signatories via API (update template signatories)
+                const currentSignatoryIds = localSignatories.map((sig: any) => sig.id || sig.employee_id);
+                const newSignatoryIds = tempSelectedSignatories.map(s => s.employee_id);
+                const allSignatoryIds = [...currentSignatoryIds, ...newSignatoryIds];
+
+                await apiRequest(`/template/${actualTemplateId}`, 'PUT', {
+                    title: templateData.title,
+                    purpose: templateData.purpose,
+                    footer_message: templateData.footer_message,
+                    signatories: allSignatoryIds
+                });
+
+                // Update local state
+                const newSignatories = tempSelectedSignatories.map(s => ({
+                    id: s.employee_id,
+                    full_name: s.full_name,
+                    remarks: "",
+                }));
+                setLocalSignatories(prev => [...prev, ...newSignatories]);
+                setShowAddSignatoryModal(false);
+                setTempSelectedSignatories([]);
+            } catch (error) {
+                console.error('Error adding signatories:', error);
+                setError('Failed to add signatories');
+            }
+        } else {
+            // New template - just update local state
+            const newSignatories = tempSelectedSignatories.map(s => ({
+                id: s.employee_id,
+                full_name: s.full_name,
+                remarks: "",
+            }));
+            setLocalSignatories(prev => [...prev, ...newSignatories]);
+            setShowAddSignatoryModal(false);
+            setTempSelectedSignatories([]);
+        }
+    };
+
     const handleConfirm = async () => {
         try {
             setIsSubmitting(true);
             setError(null);
 
-            const signatoryIds = selectedSignatories.map(
+            const signatoryIds = localSignatories.map(
                 (sig: any) => sig.id || sig.employee_id
             );
 
@@ -177,9 +316,21 @@ const TemplatePreviewModal: React.FC<TemplatePreviewModalProps> = ({
         { header: "#1f2937", light: "#f1f5f9", accent: "#475569" },
     ];
 
+    // Filter available signatories based on search query
+    const filteredAvailableSignatories = availableSignatories.filter((signatory) => {
+        const searchLower = searchQuery.toLowerCase();
+        return (
+            signatory.full_name?.toLowerCase().includes(searchLower) ||
+            signatory.employee_id?.toString().includes(searchLower) ||
+            signatory.department?.toLowerCase().includes(searchLower) ||
+            signatory.branch?.toLowerCase().includes(searchLower) ||
+            signatory.company?.toLowerCase().includes(searchLower)
+        );
+    });
+
     // Group signatories by a "department" key (use a placeholder since template
     // signatories may not carry department info yet)
-    const signatoryList = (selectedSignatories as any[]).map((sig) => ({
+    const signatoryList = (localSignatories as any[]).map((sig) => ({
         ...sig,
         _name:
             sig.full_name ||
@@ -204,189 +355,108 @@ const TemplatePreviewModal: React.FC<TemplatePreviewModalProps> = ({
     // ── render ────────────────────────────────────────────────────────────────
 
     return (
-        <Modal show={show} onHide={onHide} size="lg">
-            {/* Header */}
-            <Modal.Header
-                closeButton
-                style={{
-                    background: "linear-gradient(135deg, #1e3a5f 0%, #2563eb 100%)",
-                    borderBottom: "none",
-                }}
-            >
-                <Modal.Title
-                    style={{
-                        color: "#fff",
-                        fontWeight: 700,
-                        fontSize: "18px",
-                        display: "flex",
-                        alignItems: "center",
-                        gap: "10px",
-                    }}
-                >
-                    <span>📄</span> Template Preview
-                </Modal.Title>
-            </Modal.Header>
-
-            {/* Body */}
-            <Modal.Body style={{ background: "#f1f5f9", padding: "0" }}>
-                {/* Banner */}
-                <div
+        <>
+            <Modal show={show} onHide={onHide} size="lg">
+                {/* Header */}
+                <Modal.Header
+                    closeButton
                     style={{
                         background: "linear-gradient(135deg, #1e3a5f 0%, #2563eb 100%)",
-                        padding: "16px 24px 28px",
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "space-between",
-                        gap: "16px",
+                        borderBottom: "none",
                     }}
                 >
-                    <img
-                        src={ncccLogo}
-                        alt="NCCC Logo"
+                    <Modal.Title
                         style={{
-                            width: "70px",
-                            filter: "brightness(0) invert(1)",
-                            opacity: 0.9,
-                        }}
-                    />
-                    <div style={{ textAlign: "center", flex: 1 }}>
-                        <div
-                            style={{
-                                color: "rgba(255,255,255,0.75)",
-                                fontSize: "11px",
-                                letterSpacing: "0.12em",
-                                textTransform: "uppercase",
-                                marginBottom: "4px",
-                            }}
-                        >
-                            Clearance Template
-                        </div>
-                        <div
-                            style={{
-                                color: "#fff",
-                                fontSize: "22px",
-                                fontWeight: 700,
-                                letterSpacing: "0.01em",
-                            }}
-                        >
-                            {templateData?.title || "Untitled Template"}
-                        </div>
-                        <div
-                            style={{
-                                color: "rgba(255,255,255,0.65)",
-                                fontSize: "12px",
-                                marginTop: "4px",
-                            }}
-                        >
-                            {creator.datePrepared}
-                        </div>
-                    </div>
-                    {/* Purpose badge */}
-                    <div
-                        style={{
-                            background: "rgba(255,255,255,0.15)",
                             color: "#fff",
-                            border: "1.5px solid rgba(255,255,255,0.35)",
-                            borderRadius: "20px",
-                            padding: "6px 16px",
-                            fontWeight: 600,
-                            fontSize: "12px",
-                            whiteSpace: "nowrap",
-                            maxWidth: "140px",
-                            overflow: "hidden",
-                            textOverflow: "ellipsis",
+                            fontWeight: 700,
+                            fontSize: "18px",
+                            display: "flex",
+                            alignItems: "center",
+                            gap: "10px",
                         }}
                     >
-                        {templateData?.purpose || "N/A"}
-                    </div>
-                </div>
+                        <span>📄</span> Template Preview
+                    </Modal.Title>
+                </Modal.Header>
 
-                {/* Cards container */}
-                <div style={{ padding: "20px", marginTop: "-12px" }}>
-
-                    {/* Creator / Employee Information Card */}
+                {/* Body */}
+                <Modal.Body style={{ background: "#f1f5f9", padding: "0" }}>
+                    {/* Banner */}
                     <div
                         style={{
-                            background: "#fff",
-                            borderRadius: "14px",
-                            boxShadow:
-                                "0 1px 4px rgba(0,0,0,0.08), 0 4px 16px rgba(0,0,0,0.06)",
-                            padding: "20px",
-                            marginBottom: "16px",
+                            background: "linear-gradient(135deg, #1e3a5f 0%, #2563eb 100%)",
+                            padding: "16px 24px 28px",
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "space-between",
+                            gap: "16px",
                         }}
                     >
+                        <img
+                            src={ncccLogo}
+                            alt="NCCC Logo"
+                            style={{
+                                width: "70px",
+                                filter: "brightness(0) invert(1)",
+                                opacity: 0.9,
+                            }}
+                        />
+                        <div style={{ textAlign: "center", flex: 1 }}>
+                            <div
+                                style={{
+                                    color: "rgba(255,255,255,0.75)",
+                                    fontSize: "11px",
+                                    letterSpacing: "0.12em",
+                                    textTransform: "uppercase",
+                                    marginBottom: "4px",
+                                }}
+                            >
+                                Clearance Template
+                            </div>
+                            <div
+                                style={{
+                                    color: "#fff",
+                                    fontSize: "22px",
+                                    fontWeight: 700,
+                                    letterSpacing: "0.01em",
+                                }}
+                            >
+                                {templateData?.title || "Untitled Template"}
+                            </div>
+                            <div
+                                style={{
+                                    color: "rgba(255,255,255,0.65)",
+                                    fontSize: "12px",
+                                    marginTop: "4px",
+                                }}
+                            >
+                                {creator.datePrepared}
+                            </div>
+                        </div>
+                        {/* Purpose badge */}
                         <div
                             style={{
-                                display: "flex",
-                                alignItems: "center",
-                                gap: "8px",
-                                marginBottom: "16px",
-                                paddingBottom: "12px",
-                                borderBottom: "1px solid #e2e8f0",
+                                background: "rgba(255,255,255,0.15)",
+                                color: "#fff",
+                                border: "1.5px solid rgba(255,255,255,0.35)",
+                                borderRadius: "20px",
+                                padding: "6px 16px",
+                                fontWeight: 600,
+                                fontSize: "12px",
+                                whiteSpace: "nowrap",
+                                maxWidth: "140px",
+                                overflow: "hidden",
+                                textOverflow: "ellipsis",
                             }}
                         >
-                            <span style={{ fontSize: "18px" }}>👤</span>
-                            <span style={{ fontWeight: 700, fontSize: "15px", color: "#1e293b" }}>
-                                Creator Information
-                            </span>
-                        </div>
-                        <div className="row g-2">
-                            <div className="col-md-6">
-                                <InfoField icon="🪪" label="Employee ID" value={creator.id} />
-                            </div>
-                            <div className="col-md-6">
-                                <InfoField icon="👤" label="Prepared By" value={creator.name} />
-                            </div>
-                            <div className="col-md-6">
-                                <InfoField icon="🎯" label="Purpose" value={templateData?.purpose || "N/A"} />
-                            </div>
-                            <div className="col-md-6">
-                                <InfoField icon="📆" label="Date Prepared" value={creator.datePrepared} />
-                            </div>
+                            {templateData?.purpose || "N/A"}
                         </div>
                     </div>
 
-                    {/* Organization Details Card */}
-                    <div
-                        style={{
-                            background: "#fff",
-                            borderRadius: "14px",
-                            boxShadow:
-                                "0 1px 4px rgba(0,0,0,0.08), 0 4px 16px rgba(0,0,0,0.06)",
-                            padding: "20px",
-                            marginBottom: "16px",
-                        }}
-                    >
-                        <div
-                            style={{
-                                display: "flex",
-                                alignItems: "center",
-                                gap: "8px",
-                                marginBottom: "16px",
-                                paddingBottom: "12px",
-                                borderBottom: "1px solid #e2e8f0",
-                            }}
-                        >
-                            <span style={{ fontSize: "18px" }}>🏢</span>
-                            <span style={{ fontWeight: 700, fontSize: "15px", color: "#1e293b" }}>
-                                Organization Details
-                            </span>
-                        </div>
-                        <div className="row g-2">
-                            <div className="col-md-4">
-                                <InfoField icon="🏙️" label="Company" value={creator.company} />
-                            </div>
-                            <div className="col-md-4">
-                                <InfoField icon="📍" label="Branch" value={creator.branch} />
-                            </div>
-                            <div className="col-md-4">
-                                <InfoField icon="🗂️" label="Department" value={creator.department} />
-                            </div>
-                        </div>
-                    </div>
+                    {/* Cards container */}
+                    <div style={{ padding: "20px", marginTop: "-12px" }}>
 
-                    {/* Footer message Card (only if present) */}
-                    {templateData?.footer_message && (
+                        {/* Creator / Employee Information Card */}
                         <div
                             style={{
                                 background: "#fff",
@@ -402,287 +472,512 @@ const TemplatePreviewModal: React.FC<TemplatePreviewModalProps> = ({
                                     display: "flex",
                                     alignItems: "center",
                                     gap: "8px",
-                                    marginBottom: "12px",
+                                    marginBottom: "16px",
                                     paddingBottom: "12px",
                                     borderBottom: "1px solid #e2e8f0",
                                 }}
                             >
-                                <span style={{ fontSize: "18px" }}>📝</span>
+                                <span style={{ fontSize: "18px" }}>👤</span>
                                 <span style={{ fontWeight: 700, fontSize: "15px", color: "#1e293b" }}>
-                                    Footer Message
+                                    Creator Information
                                 </span>
                             </div>
-                            <p style={{ fontSize: "14px", color: "#475569", marginBottom: 0 }}>
-                                {templateData.footer_message}
-                            </p>
+                            <div className="row g-2">
+                                <div className="col-md-6">
+                                    <InfoField icon="🪪" label="Employee ID" value={creator.id} />
+                                </div>
+                                <div className="col-md-6">
+                                    <InfoField icon="👤" label="Prepared By" value={creator.name} />
+                                </div>
+                                <div className="col-md-6">
+                                    <InfoField icon="🎯" label="Purpose" value={templateData?.purpose || "N/A"} />
+                                </div>
+                                <div className="col-md-6">
+                                    <InfoField icon="📆" label="Date Prepared" value={creator.datePrepared} />
+                                </div>
+                            </div>
                         </div>
-                    )}
 
-                    {/* Signatories Card */}
-                    <div
-                        style={{
-                            background: "#fff",
-                            borderRadius: "14px",
-                            boxShadow:
-                                "0 1px 4px rgba(0,0,0,0.08), 0 4px 16px rgba(0,0,0,0.06)",
-                            padding: "20px",
-                            marginBottom: "8px",
-                        }}
-                    >
+                        {/* Organization Details Card */}
                         <div
                             style={{
-                                display: "flex",
-                                alignItems: "center",
-                                gap: "8px",
+                                background: "#fff",
+                                borderRadius: "14px",
+                                boxShadow:
+                                    "0 1px 4px rgba(0,0,0,0.08), 0 4px 16px rgba(0,0,0,0.06)",
+                                padding: "20px",
                                 marginBottom: "16px",
-                                paddingBottom: "12px",
-                                borderBottom: "1px solid #e2e8f0",
                             }}
                         >
-                            <span style={{ fontSize: "18px" }}>✍️</span>
-                            <span style={{ fontWeight: 700, fontSize: "15px", color: "#1e293b" }}>
-                                Signatories
-                            </span>
-                            <span
-                                style={{
-                                    background: "#e0f2fe",
-                                    color: "#0369a1",
-                                    borderRadius: "20px",
-                                    padding: "1px 10px",
-                                    fontSize: "12px",
-                                    fontWeight: 600,
-                                }}
-                            >
-                                {selectedSignatories.length}
-                            </span>
-                        </div>
-
-                        {selectedSignatories.length === 0 ? (
                             <div
                                 style={{
-                                    textAlign: "center",
-                                    padding: "32px 16px",
-                                    color: "#94a3b8",
+                                    display: "flex",
+                                    alignItems: "center",
+                                    gap: "8px",
+                                    marginBottom: "16px",
+                                    paddingBottom: "12px",
+                                    borderBottom: "1px solid #e2e8f0",
                                 }}
                             >
-                                <div style={{ fontSize: "32px", marginBottom: "8px" }}>📭</div>
-                                <div style={{ fontSize: "14px" }}>No signatories added yet.</div>
+                                <span style={{ fontSize: "18px" }}>🏢</span>
+                                <span style={{ fontWeight: 700, fontSize: "15px", color: "#1e293b" }}>
+                                    Organization Details
+                                </span>
                             </div>
-                        ) : (
-                            <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
-                                {sortedDepts.map((deptKey, dIdx) => {
-                                    const deptSigs = [...grouped[deptKey]].sort((a, b) =>
-                                        (a._role || "").localeCompare(b._role || "")
-                                    );
-                                    const palette = deptColors[dIdx % deptColors.length];
+                            <div className="row g-2">
+                                <div className="col-md-4">
+                                    <InfoField icon="🏙️" label="Company" value={creator.company} />
+                                </div>
+                                <div className="col-md-4">
+                                    <InfoField icon="📍" label="Branch" value={creator.branch} />
+                                </div>
+                                <div className="col-md-4">
+                                    <InfoField icon="🗂️" label="Department" value={creator.department} />
+                                </div>
+                            </div>
+                        </div>
 
-                                    return (
-                                        <div
-                                            key={deptKey}
-                                            style={{
-                                                border: `1px solid ${palette.light}`,
-                                                borderRadius: "12px",
-                                                overflow: "hidden",
-                                            }}
-                                        >
-                                            {/* Department header */}
+                        {/* Footer message Card (only if present) */}
+                        {templateData?.footer_message && (
+                            <div
+                                style={{
+                                    background: "#fff",
+                                    borderRadius: "14px",
+                                    boxShadow:
+                                        "0 1px 4px rgba(0,0,0,0.08), 0 4px 16px rgba(0,0,0,0.06)",
+                                    padding: "20px",
+                                    marginBottom: "16px",
+                                }}
+                            >
+                                <div
+                                    style={{
+                                        display: "flex",
+                                        alignItems: "center",
+                                        gap: "8px",
+                                        marginBottom: "12px",
+                                        paddingBottom: "12px",
+                                        borderBottom: "1px solid #e2e8f0",
+                                    }}
+                                >
+                                    <span style={{ fontSize: "18px" }}>📝</span>
+                                    <span style={{ fontWeight: 700, fontSize: "15px", color: "#1e293b" }}>
+                                        Footer Message
+                                    </span>
+                                </div>
+                                <p style={{ fontSize: "14px", color: "#475569", marginBottom: 0 }}>
+                                    {templateData.footer_message}
+                                </p>
+                            </div>
+                        )}
+
+                        {/* Signatories Card */}
+                        <div
+                            style={{
+                                background: "#fff",
+                                borderRadius: "14px",
+                                boxShadow:
+                                    "0 1px 4px rgba(0,0,0,0.08), 0 4px 16px rgba(0,0,0,0.06)",
+                                padding: "20px",
+                                marginBottom: "8px",
+                            }}
+                        >
+                            <div
+                                style={{
+                                    display: "flex",
+                                    alignItems: "center",
+                                    gap: "8px",
+                                    marginBottom: "16px",
+                                    paddingBottom: "12px",
+                                    borderBottom: "1px solid #e2e8f0",
+                                }}
+                            >
+                                <span style={{ fontSize: "18px" }}>✍️</span>
+                                <span style={{ fontWeight: 700, fontSize: "15px", color: "#1e293b" }}>
+                                    Signatories
+                                </span>
+                                <span
+                                    style={{
+                                        background: "#e0f2fe",
+                                        color: "#0369a1",
+                                        borderRadius: "20px",
+                                        padding: "1px 10px",
+                                        fontSize: "12px",
+                                        fontWeight: 600,
+                                    }}
+                                >
+                                    {localSignatories.length}
+                                </span>
+                                <Button
+                                    variant="primary"
+                                    size="sm"
+                                    onClick={handleAddSignatoryClick}
+                                    disabled={loadingSignatories}
+                                    style={{
+                                        marginLeft: "auto",
+                                        fontSize: "12px",
+                                        padding: "4px 12px",
+                                        borderRadius: "6px",
+                                    }}
+                                >
+                                    {loadingSignatories ? (
+                                        <>
+                                            <Spinner
+                                                as="span"
+                                                animation="border"
+                                                size="sm"
+                                                role="status"
+                                                aria-hidden="true"
+                                                className="me-1"
+                                                style={{ width: "12px", height: "12px" }}
+                                            />
+                                            Loading...
+                                        </>
+                                    ) : (
+                                        <>➕ Add Signatory</>
+                                    )}
+                                </Button>
+                            </div>
+
+                            {localSignatories.length === 0 ? (
+                                <div
+                                    style={{
+                                        textAlign: "center",
+                                        padding: "32px 16px",
+                                        color: "#94a3b8",
+                                    }}
+                                >
+                                    <div style={{ fontSize: "32px", marginBottom: "8px" }}>📭</div>
+                                    <div style={{ fontSize: "14px" }}>No signatories added yet.</div>
+                                </div>
+                            ) : (
+                                <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+                                    {sortedDepts.map((deptKey, dIdx) => {
+                                        const deptSigs = [...grouped[deptKey]].sort((a, b) =>
+                                            (a._role || "").localeCompare(b._role || "")
+                                        );
+                                        const palette = deptColors[dIdx % deptColors.length];
+
+                                        return (
                                             <div
+                                                key={deptKey}
                                                 style={{
-                                                    background: palette.header,
-                                                    padding: "10px 16px",
-                                                    display: "flex",
-                                                    alignItems: "center",
-                                                    gap: "8px",
+                                                    border: `1px solid ${palette.light}`,
+                                                    borderRadius: "12px",
+                                                    overflow: "hidden",
                                                 }}
                                             >
-                                                <span style={{ fontSize: "14px" }}>🗂️</span>
-                                                <span
+                                                {/* Department header */}
+                                                <div
                                                     style={{
-                                                        fontWeight: 700,
-                                                        fontSize: "13px",
-                                                        color: "#fff",
-                                                        letterSpacing: "0.04em",
-                                                        textTransform: "uppercase",
+                                                        background: palette.header,
+                                                        padding: "10px 16px",
+                                                        display: "flex",
+                                                        alignItems: "center",
+                                                        gap: "8px",
                                                     }}
                                                 >
-                                                    {deptKey}
-                                                </span>
-                                                <span
-                                                    style={{
-                                                        marginLeft: "auto",
-                                                        background: "rgba(255,255,255,0.2)",
-                                                        color: "#fff",
-                                                        borderRadius: "20px",
-                                                        padding: "1px 10px",
-                                                        fontSize: "11px",
-                                                        fontWeight: 600,
-                                                    }}
-                                                >
-                                                    {deptSigs.length}{" "}
-                                                    {deptSigs.length === 1 ? "signatory" : "signatories"}
-                                                </span>
-                                            </div>
+                                                    <span style={{ fontSize: "14px" }}>🗂️</span>
+                                                    <span
+                                                        style={{
+                                                            fontWeight: 700,
+                                                            fontSize: "13px",
+                                                            color: "#fff",
+                                                            letterSpacing: "0.04em",
+                                                            textTransform: "uppercase",
+                                                        }}
+                                                    >
+                                                        {deptKey}
+                                                    </span>
+                                                    <span
+                                                        style={{
+                                                            marginLeft: "auto",
+                                                            background: "rgba(255,255,255,0.2)",
+                                                            color: "#fff",
+                                                            borderRadius: "20px",
+                                                            padding: "1px 10px",
+                                                            fontSize: "11px",
+                                                            fontWeight: 600,
+                                                        }}
+                                                    >
+                                                        {deptSigs.length}{" "}
+                                                        {deptSigs.length === 1 ? "signatory" : "signatories"}
+                                                    </span>
+                                                </div>
 
-                                            {/* Signatory rows */}
-                                            <div style={{ background: "#fff" }}>
-                                                {deptSigs.map((sig, sIdx) => {
-                                                    const isLast = sIdx === deptSigs.length - 1;
-                                                    return (
-                                                        <div
-                                                            key={sig.id ?? sig.employee_id ?? sIdx}
-                                                            style={{
-                                                                display: "flex",
-                                                                alignItems: "center",
-                                                                gap: "12px",
-                                                                padding: "12px 16px",
-                                                                borderBottom: isLast
-                                                                    ? "none"
-                                                                    : "1px solid #f1f5f9",
-                                                                flexWrap: "wrap",
-                                                            }}
-                                                        >
-                                                            {/* Avatar */}
+                                                {/* Signatory rows */}
+                                                <div style={{ background: "#fff" }}>
+                                                    {deptSigs.map((sig, sIdx) => {
+                                                        const isLast = sIdx === deptSigs.length - 1;
+                                                        return (
                                                             <div
+                                                                key={sig.id ?? sig.employee_id ?? sIdx}
                                                                 style={{
-                                                                    width: "36px",
-                                                                    height: "36px",
-                                                                    borderRadius: "50%",
-                                                                    background: palette.light,
-                                                                    color: palette.accent,
                                                                     display: "flex",
                                                                     alignItems: "center",
-                                                                    justifyContent: "center",
-                                                                    fontWeight: 700,
-                                                                    fontSize: "14px",
-                                                                    flexShrink: 0,
+                                                                    gap: "12px",
+                                                                    padding: "12px 16px",
+                                                                    borderBottom: isLast
+                                                                        ? "none"
+                                                                        : "1px solid #f1f5f9",
+                                                                    flexWrap: "wrap",
                                                                 }}
                                                             >
-                                                                {sig._name.charAt(0).toUpperCase()}
-                                                            </div>
-
-                                                            {/* Name + Role */}
-                                                            <div style={{ flex: 1, minWidth: "120px" }}>
+                                                                {/* Avatar */}
                                                                 <div
                                                                     style={{
-                                                                        fontWeight: 600,
+                                                                        width: "36px",
+                                                                        height: "36px",
+                                                                        borderRadius: "50%",
+                                                                        background: palette.light,
+                                                                        color: palette.accent,
+                                                                        display: "flex",
+                                                                        alignItems: "center",
+                                                                        justifyContent: "center",
+                                                                        fontWeight: 700,
                                                                         fontSize: "14px",
-                                                                        color: "#1e293b",
+                                                                        flexShrink: 0,
                                                                     }}
                                                                 >
-                                                                    {sig._name}
+                                                                    {sig._name.charAt(0).toUpperCase()}
                                                                 </div>
-                                                                {sig._role !== "—" && (
+
+                                                                {/* Name + Role */}
+                                                                <div style={{ flex: 1, minWidth: "120px" }}>
                                                                     <div
                                                                         style={{
-                                                                            fontSize: "11px",
-                                                                            color: "#64748b",
-                                                                            marginTop: "2px",
+                                                                            fontWeight: 600,
+                                                                            fontSize: "14px",
+                                                                            color: "#1e293b",
                                                                         }}
                                                                     >
-                                                                        <span
+                                                                        {sig._name}
+                                                                    </div>
+                                                                    {sig._role !== "—" && (
+                                                                        <div
                                                                             style={{
-                                                                                background: palette.light,
-                                                                                color: palette.accent,
-                                                                                borderRadius: "6px",
-                                                                                padding: "1px 7px",
-                                                                                fontWeight: 600,
-                                                                                fontSize: "10px",
+                                                                                fontSize: "11px",
+                                                                                color: "#64748b",
+                                                                                marginTop: "2px",
                                                                             }}
                                                                         >
-                                                                            {sig._role}
-                                                                        </span>
-                                                                    </div>
-                                                                )}
-                                                            </div>
+                                                                            <span
+                                                                                style={{
+                                                                                    background: palette.light,
+                                                                                    color: palette.accent,
+                                                                                    borderRadius: "6px",
+                                                                                    padding: "1px 7px",
+                                                                                    fontWeight: 600,
+                                                                                    fontSize: "10px",
+                                                                                }}
+                                                                            >
+                                                                                {sig._role}
+                                                                            </span>
+                                                                        </div>
+                                                                    )}
+                                                                </div>
 
-                                                            {/* Remarks */}
-                                                            <div
-                                                                style={{
-                                                                    flex: 2,
-                                                                    minWidth: "100px",
-                                                                    fontSize: "12px",
-                                                                    color: "#475569",
-                                                                }}
-                                                            >
-                                                                <div
+                                                                {/* Delete Button */}
+                                                                <Button
+                                                                    variant="danger"
+                                                                    size="sm"
+                                                                    onClick={() => handleRemoveSignatory(sig.id ?? sig.employee_id)}
                                                                     style={{
-                                                                        fontSize: "9px",
-                                                                        fontWeight: 700,
-                                                                        color: "#94a3b8",
-                                                                        textTransform: "uppercase",
-                                                                        letterSpacing: "0.06em",
-                                                                        marginBottom: "2px",
+                                                                        padding: "4px 12px",
+                                                                        fontSize: "12px",
+                                                                        borderRadius: "6px",
                                                                     }}
                                                                 >
-                                                                    Remarks
-                                                                </div>
-                                                                <div>{sig._remarks}</div>
+                                                                    🗑️ Remove
+                                                                </Button>
                                                             </div>
-
-                                                            {/* Status badge — always "Pending" for a new template */}
-                                                            <div
-                                                                style={{
-                                                                    background: "#fef9c3",
-                                                                    color: "#854d0e",
-                                                                    border: "1px solid #fde047",
-                                                                    borderRadius: "20px",
-                                                                    padding: "3px 12px",
-                                                                    fontSize: "11px",
-                                                                    fontWeight: 700,
-                                                                    textTransform: "uppercase",
-                                                                    letterSpacing: "0.06em",
-                                                                    whiteSpace: "nowrap",
-                                                                }}
-                                                            >
-                                                                Pending
-                                                            </div>
-                                                        </div>
-                                                    );
-                                                })}
+                                                        );
+                                                    })}
+                                                </div>
                                             </div>
-                                        </div>
-                                    );
-                                })}
+                                        );
+                                    })}
+                                </div>
+                            )}
+                        </div>
+
+                        {error && (
+                            <div className="alert alert-danger mt-3">{error}</div>
+                        )}
+                    </div>
+                </Modal.Body>
+
+                {/* Footer */}
+                <Modal.Footer style={{ background: "#f8fafc", borderTop: "1px solid #e2e8f0" }}>
+                    <Button variant="secondary" onClick={onHide} disabled={isSubmitting}>
+                        Cancel
+                    </Button>
+                    {showConfirmButton && (
+                        <Button
+                            variant="success"
+                            onClick={handleConfirm}
+                            disabled={isSubmitting}
+                        >
+                            {isSubmitting ? (
+                                <>
+                                    <Spinner
+                                        as="span"
+                                        animation="border"
+                                        size="sm"
+                                        role="status"
+                                        aria-hidden="true"
+                                        className="me-2"
+                                    />
+                                    Creating...
+                                </>
+                            ) : (
+                                "Confirm Template"
+                            )}
+                        </Button>
+                    )}
+                </Modal.Footer>
+            </Modal>
+
+            {/* Add Signatory Modal */}
+            <Modal
+                show={showAddSignatoryModal}
+                onHide={() => {
+                    setShowAddSignatoryModal(false);
+                    setSearchQuery("");
+                }}
+                size="lg"
+            >
+                <Modal.Header
+                    closeButton
+                    style={{ background: "linear-gradient(135deg, #1e3a5f 0%, #2563eb 100%)" }}
+                >
+                    <Modal.Title style={{ color: "#fff", fontWeight: 700, fontSize: "18px" }}>
+                        ➕ Add Signatories
+                    </Modal.Title>
+                </Modal.Header>
+                <Modal.Body>
+                    {/* Search Input */}
+                    <div style={{ marginBottom: "16px" }}>
+                        <div style={{ position: "relative" }}>
+                            <input
+                                type="text"
+                                className="form-control"
+                                placeholder="🔍 Search by name, ID, department, branch..."
+                                value={searchQuery}
+                                onChange={(e) => setSearchQuery(e.target.value)}
+                                style={{
+                                    padding: "10px 40px 10px 16px",
+                                    fontSize: "14px",
+                                    borderRadius: "8px",
+                                    border: "1px solid #e2e8f0",
+                                }}
+                            />
+                            {searchQuery && (
+                                <button
+                                    onClick={() => setSearchQuery("")}
+                                    style={{
+                                        position: "absolute",
+                                        right: "10px",
+                                        top: "50%",
+                                        transform: "translateY(-50%)",
+                                        background: "transparent",
+                                        border: "none",
+                                        cursor: "pointer",
+                                        fontSize: "18px",
+                                        color: "#94a3b8",
+                                        padding: "0 5px",
+                                    }}
+                                    title="Clear search"
+                                >
+                                    ✕
+                                </button>
+                            )}
+                        </div>
+                        {searchQuery && (
+                            <div style={{ fontSize: "12px", color: "#64748b", marginTop: "8px" }}>
+                                Found {filteredAvailableSignatories.length} signator{filteredAvailableSignatories.length === 1 ? 'y' : 'ies'}
                             </div>
                         )}
                     </div>
 
-                    {error && (
-                        <div className="alert alert-danger mt-3">{error}</div>
+                    {availableSignatories.length === 0 ? (
+                        <div style={{ textAlign: "center", padding: "32px 16px", color: "#94a3b8" }}>
+                            <div style={{ fontSize: "32px", marginBottom: "8px" }}>✅</div>
+                            <div style={{ fontSize: "14px" }}>All available signatories have been added.</div>
+                        </div>
+                    ) : filteredAvailableSignatories.length === 0 ? (
+                        <div style={{ textAlign: "center", padding: "32px 16px", color: "#94a3b8" }}>
+                            <div style={{ fontSize: "32px", marginBottom: "8px" }}>🔍</div>
+                            <div style={{ fontSize: "14px" }}>No signatories match your search.</div>
+                        </div>
+                    ) : (
+                        <div style={{ maxHeight: "400px", overflow: "auto" }}>
+                            {filteredAvailableSignatories.map((signatory) => (
+                                <div
+                                    key={signatory.employee_id}
+                                    onClick={() => handleSelectSignatory(signatory)}
+                                    style={{
+                                        padding: "12px 16px",
+                                        marginBottom: "8px",
+                                        border: tempSelectedSignatories.some(s => s.employee_id === signatory.employee_id)
+                                            ? "2px solid #2563eb"
+                                            : "1px solid #e2e8f0",
+                                        borderRadius: "8px",
+                                        background: tempSelectedSignatories.some(s => s.employee_id === signatory.employee_id)
+                                            ? "#eff6ff"
+                                            : "#fff",
+                                        cursor: "pointer",
+                                        display: "flex",
+                                        alignItems: "center",
+                                        gap: "12px",
+                                        transition: "all 0.2s",
+                                    }}
+                                >
+                                    <input
+                                        type="checkbox"
+                                        checked={tempSelectedSignatories.some(s => s.employee_id === signatory.employee_id)}
+                                        onChange={() => { }}
+                                        style={{ cursor: "pointer", width: "18px", height: "18px" }}
+                                    />
+                                    <div style={{ flex: 1 }}>
+                                        <div style={{ fontWeight: 600, fontSize: "14px", color: "#1e293b" }}>
+                                            {signatory.full_name}
+                                        </div>
+                                        <div style={{ fontSize: "12px", color: "#64748b", marginTop: "2px" }}>
+                                            ID: {signatory.employee_id} | Dept: {signatory.department || "N/A"} | Branch: {signatory.branch || "N/A"}
+                                        </div>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
                     )}
-                </div>
-            </Modal.Body>
-
-            {/* Footer */}
-            <Modal.Footer style={{ background: "#f8fafc", borderTop: "1px solid #e2e8f0" }}>
-                <Button variant="secondary" onClick={onHide} disabled={isSubmitting}>
-                    Cancel
-                </Button>
-                {showConfirmButton && (
+                    {tempSelectedSignatories.length > 0 && (
+                        <div style={{ marginTop: "16px", padding: "12px", background: "#eff6ff", borderRadius: "8px" }}>
+                            <strong style={{ color: "#1e3a5f" }}>
+                                {tempSelectedSignatories.length} signator{tempSelectedSignatories.length === 1 ? 'y' : 'ies'} selected
+                            </strong>
+                        </div>
+                    )}
+                </Modal.Body>
+                <Modal.Footer>
                     <Button
-                        variant="success"
-                        onClick={handleConfirm}
-                        disabled={isSubmitting}
+                        variant="secondary"
+                        onClick={() => {
+                            setShowAddSignatoryModal(false);
+                            setSearchQuery("");
+                        }}
                     >
-                        {isSubmitting ? (
-                            <>
-                                <Spinner
-                                    as="span"
-                                    animation="border"
-                                    size="sm"
-                                    role="status"
-                                    aria-hidden="true"
-                                    className="me-2"
-                                />
-                                Creating...
-                            </>
-                        ) : (
-                            "Confirm Template"
-                        )}
+                        Cancel
                     </Button>
-                )}
-            </Modal.Footer>
-        </Modal>
+                    <Button
+                        variant="primary"
+                        onClick={handleAddSelectedSignatories}
+                        disabled={tempSelectedSignatories.length === 0}
+                    >
+                        Add Selected ({tempSelectedSignatories.length})
+                    </Button>
+                </Modal.Footer>
+            </Modal>
+        </>
     );
 };
 

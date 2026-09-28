@@ -250,31 +250,135 @@ const DynamicTable = <T extends object>({
                     </Table>
                 </div>
                 {showPagination && totalPages > 1 && (
-                    <div className="d-flex justify-content-between align-items-center mt-2">
+                    <div className="d-flex flex-column flex-sm-row justify-content-between align-items-center mt-2 gap-2">
                         <div className="text-muted" style={{ fontSize: '0.93rem' }}>
                             {filteredData.length ? (
                                 <>Showing {((currentPage - 1) * pageSize) + 1}-{Math.min(currentPage * pageSize, filteredData.length)} of {filteredData.length}</>
                             ) : 'No entries'}
                         </div>
-                        <Pagination className="mb-0" size="sm">
-                            <Pagination.Prev
-                                disabled={currentPage === 1}
-                                onClick={() => setCurrentPage(currentPage - 1)}
-                            />
-                            {Array.from({ length: totalPages }, (_, i) => i + 1).map(page => (
-                                <Pagination.Item
-                                    key={page}
-                                    active={page === currentPage}
-                                    onClick={() => setCurrentPage(page)}
-                                >
-                                    {page}
-                                </Pagination.Item>
-                            ))}
-                            <Pagination.Next
-                                disabled={currentPage === totalPages}
-                                onClick={() => setCurrentPage(currentPage + 1)}
-                            />
-                        </Pagination>
+                        <div className="d-flex align-items-center gap-2 flex-wrap justify-content-center">
+                            <Pagination className="mb-0" size="sm" style={{ flexWrap: 'wrap' }}>
+                                <Pagination.First
+                                    disabled={currentPage === 1}
+                                    onClick={() => setCurrentPage(1)}
+                                />
+                                <Pagination.Prev
+                                    disabled={currentPage === 1}
+                                    onClick={() => setCurrentPage(currentPage - 1)}
+                                />
+                                {(() => {
+                                    const pageNumbers = [];
+                                    const maxPagesToShow = 5;
+
+                                    if (totalPages <= maxPagesToShow + 2) {
+                                        // Show all pages if total is small
+                                        for (let i = 1; i <= totalPages; i++) {
+                                            pageNumbers.push(
+                                                <Pagination.Item
+                                                    key={i}
+                                                    active={i === currentPage}
+                                                    onClick={() => setCurrentPage(i)}
+                                                >
+                                                    {i}
+                                                </Pagination.Item>
+                                            );
+                                        }
+                                    } else {
+                                        // Always show first page
+                                        pageNumbers.push(
+                                            <Pagination.Item
+                                                key={1}
+                                                active={1 === currentPage}
+                                                onClick={() => setCurrentPage(1)}
+                                            >
+                                                1
+                                            </Pagination.Item>
+                                        );
+
+                                        let startPage = Math.max(2, currentPage - 1);
+                                        let endPage = Math.min(totalPages - 1, currentPage + 1);
+
+                                        // Adjust range if at the start
+                                        if (currentPage <= 3) {
+                                            startPage = 2;
+                                            endPage = Math.min(maxPagesToShow, totalPages - 1);
+                                        }
+
+                                        // Adjust range if at the end
+                                        if (currentPage >= totalPages - 2) {
+                                            startPage = Math.max(2, totalPages - maxPagesToShow + 1);
+                                            endPage = totalPages - 1;
+                                        }
+
+                                        // Add ellipsis after first page if needed
+                                        if (startPage > 2) {
+                                            pageNumbers.push(
+                                                <Pagination.Ellipsis key="ellipsis-start" disabled />
+                                            );
+                                        }
+
+                                        // Add middle pages
+                                        for (let i = startPage; i <= endPage; i++) {
+                                            pageNumbers.push(
+                                                <Pagination.Item
+                                                    key={i}
+                                                    active={i === currentPage}
+                                                    onClick={() => setCurrentPage(i)}
+                                                >
+                                                    {i}
+                                                </Pagination.Item>
+                                            );
+                                        }
+
+                                        // Add ellipsis before last page if needed
+                                        if (endPage < totalPages - 1) {
+                                            pageNumbers.push(
+                                                <Pagination.Ellipsis key="ellipsis-end" disabled />
+                                            );
+                                        }
+
+                                        // Always show last page
+                                        pageNumbers.push(
+                                            <Pagination.Item
+                                                key={totalPages}
+                                                active={totalPages === currentPage}
+                                                onClick={() => setCurrentPage(totalPages)}
+                                            >
+                                                {totalPages}
+                                            </Pagination.Item>
+                                        );
+                                    }
+
+                                    return pageNumbers;
+                                })()}
+                                <Pagination.Next
+                                    disabled={currentPage === totalPages}
+                                    onClick={() => setCurrentPage(currentPage + 1)}
+                                />
+                                <Pagination.Last
+                                    disabled={currentPage === totalPages}
+                                    onClick={() => setCurrentPage(totalPages)}
+                                />
+                            </Pagination>
+                            {/* Page jump input */}
+                            <div className="d-flex align-items-center" style={{ fontSize: '0.85rem' }}>
+                                <span className="text-muted me-1">Go to:</span>
+                                <Form.Control
+                                    type="number"
+                                    min={1}
+                                    max={totalPages}
+                                    value={currentPage}
+                                    onChange={(e) => {
+                                        const page = parseInt(e.target.value);
+                                        if (page >= 1 && page <= totalPages) {
+                                            setCurrentPage(page);
+                                        }
+                                    }}
+                                    style={{ width: '60px', fontSize: '0.85rem', padding: '0.25rem 0.5rem' }}
+                                    size="sm"
+                                />
+                            </div>
+                        </div>
                     </div>
                 )}
             </Card.Body>

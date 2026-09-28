@@ -7,6 +7,7 @@ import DynamicTable, {
 import { apiRequest } from "../../utils/ApiService";
 import { useCustomAlert } from "../../utils/CustomAlert";
 import ClearanceDetails from "./ClearanceDetails";
+import ClearanceEditModal from "./ClearanceEditModal";
 
 interface ClearanceItem {
     id: number;
@@ -22,6 +23,7 @@ interface ClearanceItem {
     status: string;
     display_status: string;
     assigner?: string | null;
+    assigned_by?: number | null;
     is_approved_by_me?: boolean;
 }
 
@@ -30,8 +32,10 @@ const Dashboard = () => {
     const [clearances, setClearances] = useState<ClearanceItem[]>([]);
     const [loading, setLoading] = useState(true);
     const [showDetailsModal, setShowDetailsModal] = useState(false);
+    const [showEditModal, setShowEditModal] = useState(false);
     const [selectedClearanceId, setSelectedClearanceId] =
         useState<number | null>(null);
+    const [currentEmployeeId, setCurrentEmployeeId] = useState<number | null>(null);
 
     const { showAlert, AlertComponent } = useCustomAlert();
 
@@ -227,6 +231,10 @@ const Dashboard = () => {
                                     )
                                 : null,
 
+                        assigned_by:
+                            clearance.assigned_by ??
+                            null,
+
                         is_approved_by_me:
                             isApprovedByMe
                     };
@@ -248,6 +256,157 @@ const Dashboard = () => {
 
     useEffect(() => {
         fetchClearances();
+    }, []);
+
+    // ---------------------------------------------------------
+    // DELETE CLEARANCE
+    // ---------------------------------------------------------
+
+    const handleDeleteClearance = async (clearanceId: number) => {
+        if (!window.confirm("Are you sure you want to delete this clearance? This action cannot be undone.")) {
+            return;
+        }
+
+        try {
+            await apiRequest(`/clearances/${clearanceId}`, "DELETE");
+            showAlert("success", "Clearance deleted successfully.");
+
+            // Update local state by removing the deleted clearance
+            setClearances(prevClearances =>
+                prevClearances.filter(clearance => clearance.id !== clearanceId)
+            );
+        } catch (error: any) {
+            showAlert(
+                "error",
+                error?.response?.data?.message || "Failed to delete clearance."
+            );
+        }
+    };
+
+    // ---------------------------------------------------------
+    // APPROVE CLEARANCE
+    // ---------------------------------------------------------
+
+    const handleApproveClearance = async (clearanceId: number) => {
+        try {
+            await apiRequest(
+                "/my-clearance/approve",
+                "PUT",
+                {
+                    clearance_id: clearanceId
+                }
+            );
+
+            showAlert(
+                "success",
+                "Clearance approved successfully."
+            );
+
+            // Update local state by marking as approved and removing from "in progress"
+            setClearances(prevClearances =>
+                prevClearances.map(clearance => {
+                    if (clearance.id === clearanceId) {
+                        return {
+                            ...clearance,
+                            is_approved_by_me: true,
+                            display_status: "Approved",
+                            status: "Approved"
+                        };
+                    }
+                    return clearance;
+                })
+            );
+        } catch (error: any) {
+            showAlert(
+                "error",
+                error?.response?.data?.message || "Failed to approve clearance."
+            );
+        }
+    };
+
+    // ---------------------------------------------------------
+    // HANDLE CLEARANCE UPDATED (FROM MODALS)
+    // ---------------------------------------------------------
+
+    const handleClearanceUpdated = (clearanceId: number) => {
+        // Only fetch the specific clearance that was updated, not the entire list
+        const fetchUpdatedClearance = async () => {
+            try {
+                const response = await apiRequest(`/clearance/${clearanceId}/details`, "GET") as any;
+                const updatedData = response?.data?.data || response?.data;
+                const updatedClearance = updatedData?.clearance;
+
+                if (updatedClearance) {
+                    // Update the specific clearance in local state
+                    setClearances(prevClearances =>
+                        prevClearances.map(clearance => {
+                            if (clearance.id === clearanceId) {
+                                // Map the updated data to match the ClearanceItem interface
+                                const overallStatus =
+                                    updatedClearance.clearance_status ?? "Pending";
+
+                                const isApprovedByMe =
+                                    updatedData.signatories?.some((s: any) =>
+                                        (s.Employee?.employee_id === currentEmployeeId) &&
+                                        s.is_approved === true
+                                    ) ?? false;
+
+                                let displayStatus: string;
+                                if (overallStatus?.toLowerCase() === "cleared") {
+                                    displayStatus = "Cleared";
+                                } else if (isApprovedByMe) {
+                                    displayStatus = "Approved";
+                                } else {
+                                    displayStatus = overallStatus;
+                                }
+
+                                return {
+                                    ...clearance,
+                                    status: overallStatus,
+                                    display_status: displayStatus,
+                                    is_approved_by_me: isApprovedByMe,
+                                    // Update other fields that might have changed
+                                    name: [
+                                        updatedClearance.first_name ?? "",
+                                        updatedClearance.middle_name ?? "",
+                                        updatedClearance.last_name ?? ""
+                                    ].filter(Boolean).join(" ") || clearance.name,
+                                    position: updatedClearance.position ?? clearance.position,
+                                    effectivity_date: updatedClearance.effectivity_date
+                                        ? new Date(updatedClearance.effectivity_date).toLocaleDateString()
+                                        : clearance.effectivity_date,
+                                    purpose: updatedClearance.purpose ?? clearance.purpose,
+                                };
+                            }
+                            return clearance;
+                        })
+                    );
+                }
+            } catch (error) {
+                console.error("Failed to fetch updated clearance:", error);
+                // Silently fail - the user can refresh manually if needed
+            }
+        };
+
+        fetchUpdatedClearance();
+    };
+
+    // ---------------------------------------------------------
+    // FETCH CURRENT EMPLOYEE ID
+    // ---------------------------------------------------------
+
+    useEffect(() => {
+        const fetchCurrentEmployee = async () => {
+            try {
+                const response = await apiRequest<any>("/check-permissions", "GET");
+                const perms = response?.data?.data || {};
+                setCurrentEmployeeId(perms.employee_id ?? null);
+            } catch (error) {
+                console.error("Failed to fetch current employee:", error);
+            }
+        };
+
+        fetchCurrentEmployee();
     }, []);
 
     // ---------------------------------------------------------
@@ -691,58 +850,214 @@ const Dashboard = () => {
                 formatter: (
                     _cell,
                     row
-                ) => (
-                    <Button
-                        variant="success"
-                        size="sm"
-                        onClick={() => {
-                            setSelectedClearanceId(
-                                row.id
-                            );
+                ) => {
+                    const isCleared = (row.display_status || row.status || "").toLowerCase() === "cleared";
+                    const isAssignedByMe = currentEmployeeId !== null && row.assigned_by === currentEmployeeId;
+                    const isApprovedByMe = row.is_approved_by_me === true;
+                    const canApprove = !isCleared && !isApprovedByMe && row.display_status?.toLowerCase() !== "approved";
 
-                            setShowDetailsModal(
-                                true
-                            );
-                        }}
-                        style={{
-                            fontSize:
-                                isMobile
-                                    ? "8px"
-                                    : isTablet
-                                        ? "11px"
-                                        : "13px",
+                    return (
+                        <div style={{
+                            display: "flex",
+                            gap: isMobile ? "4px" : "8px",
+                            flexWrap: "wrap"
+                        }}>
+                            <Button
+                                variant="success"
+                                size="sm"
+                                onClick={() => {
+                                    setSelectedClearanceId(
+                                        row.id
+                                    );
 
-                            padding:
-                                isMobile
-                                    ? "3px 8px"
-                                    : "4px 12px",
+                                    setShowDetailsModal(
+                                        true
+                                    );
+                                }}
+                                style={{
+                                    fontSize:
+                                        isMobile
+                                            ? "8px"
+                                            : isTablet
+                                                ? "11px"
+                                                : "13px",
 
-                            minHeight:
-                                isMobile
-                                    ? "24px"
-                                    : "32px",
+                                    padding:
+                                        isMobile
+                                            ? "3px 8px"
+                                            : "4px 12px",
 
-                            minWidth:
-                                isMobile
-                                    ? "40px"
-                                    : "60px",
+                                    minHeight:
+                                        isMobile
+                                            ? "24px"
+                                            : "32px",
 
-                            borderRadius:
-                                isMobile
-                                    ? "4px"
-                                    : "6px",
+                                    minWidth:
+                                        isMobile
+                                            ? "40px"
+                                            : "60px",
 
-                            width:
-                                isMobile
-                                    ? "100%"
-                                    : "auto"
-                        }}
-                    >
-                        {isMobile
-                            ? "👁"
-                            : "View"}
-                    </Button>
-                )
+                                    borderRadius:
+                                        isMobile
+                                            ? "4px"
+                                            : "6px",
+
+                                    width:
+                                        isMobile
+                                            ? "100%"
+                                            : "auto"
+                                }}
+                            >
+                                {isMobile
+                                    ? "👁"
+                                    : "View"}
+                            </Button>
+
+                            {canApprove && (
+                                <Button
+                                    variant="info"
+                                    size="sm"
+                                    onClick={() => handleApproveClearance(row.id)}
+                                    style={{
+                                        fontSize:
+                                            isMobile
+                                                ? "8px"
+                                                : isTablet
+                                                    ? "11px"
+                                                    : "13px",
+
+                                        padding:
+                                            isMobile
+                                                ? "3px 8px"
+                                                : "4px 12px",
+
+                                        minHeight:
+                                            isMobile
+                                                ? "24px"
+                                                : "32px",
+
+                                        minWidth:
+                                            isMobile
+                                                ? "40px"
+                                                : "60px",
+
+                                        borderRadius:
+                                            isMobile
+                                                ? "4px"
+                                                : "6px",
+
+                                        width:
+                                            isMobile
+                                                ? "100%"
+                                                : "auto"
+                                    }}
+                                >
+                                    {isMobile
+                                        ? "✓"
+                                        : "Approve"}
+                                </Button>
+                            )}
+
+                            {!isCleared && isAssignedByMe && (
+                                <Button
+                                    variant="primary"
+                                    size="sm"
+                                    onClick={() => {
+                                        setSelectedClearanceId(
+                                            row.id
+                                        );
+
+                                        setShowEditModal(
+                                            true
+                                        );
+                                    }}
+                                    style={{
+                                        fontSize:
+                                            isMobile
+                                                ? "8px"
+                                                : isTablet
+                                                    ? "11px"
+                                                    : "13px",
+
+                                        padding:
+                                            isMobile
+                                                ? "3px 8px"
+                                                : "4px 12px",
+
+                                        minHeight:
+                                            isMobile
+                                                ? "24px"
+                                                : "32px",
+
+                                        minWidth:
+                                            isMobile
+                                                ? "40px"
+                                                : "60px",
+
+                                        borderRadius:
+                                            isMobile
+                                                ? "4px"
+                                                : "6px",
+
+                                        width:
+                                            isMobile
+                                                ? "100%"
+                                                : "auto"
+                                    }}
+                                >
+                                    {isMobile
+                                        ? "✏️"
+                                        : "Edit"}
+                                </Button>
+                            )}
+
+                            {!isCleared && isAssignedByMe && (
+                                <Button
+                                    variant="danger"
+                                    size="sm"
+                                    onClick={() => handleDeleteClearance(row.id)}
+                                    style={{
+                                        fontSize:
+                                            isMobile
+                                                ? "8px"
+                                                : isTablet
+                                                    ? "11px"
+                                                    : "13px",
+
+                                        padding:
+                                            isMobile
+                                                ? "3px 8px"
+                                                : "4px 12px",
+
+                                        minHeight:
+                                            isMobile
+                                                ? "24px"
+                                                : "32px",
+
+                                        minWidth:
+                                            isMobile
+                                                ? "40px"
+                                                : "60px",
+
+                                        borderRadius:
+                                            isMobile
+                                                ? "4px"
+                                                : "6px",
+
+                                        width:
+                                            isMobile
+                                                ? "100%"
+                                                : "auto"
+                                    }}
+                                >
+                                    {isMobile
+                                        ? "🗑️"
+                                        : "Delete"}
+                                </Button>
+                            )}
+                        </div>
+                    );
+                }
             };
 
             // -------------------------------------------------
@@ -1168,16 +1483,37 @@ const Dashboard = () => {
                     setShowDetailsModal(
                         false
                     );
-
-                    fetchClearances();
                 }}
                 clearanceId={
                     selectedClearanceId ??
                     0
                 }
-                onUpdated={
-                    fetchClearances
+                onUpdated={() => {
+                    // Only fetch updated data for this specific clearance
+                    if (selectedClearanceId) {
+                        handleClearanceUpdated(selectedClearanceId);
+                    }
+                }}
+            />
+
+            <ClearanceEditModal
+                show={
+                    showEditModal
                 }
+                onHide={() => {
+                    setShowEditModal(
+                        false
+                    );
+                }}
+                clearanceId={
+                    selectedClearanceId
+                }
+                onUpdated={() => {
+                    // Only fetch updated data for this specific clearance
+                    if (selectedClearanceId) {
+                        handleClearanceUpdated(selectedClearanceId);
+                    }
+                }}
             />
         </div>
     );

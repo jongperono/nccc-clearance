@@ -3,6 +3,7 @@ import { Button, Spinner, Modal, Badge } from "react-bootstrap";
 import DynamicTable, { ColumnDefinition } from "../../utils/DynamicTable";
 import MessageThreadModal from "./MessageThreadModal";
 import ClearanceDetails from "./ClearanceDetails";
+import ClearanceEditModal from "./ClearanceEditModal";
 import { apiRequest } from "../../utils/ApiService";
 import { useCustomAlert } from "../../utils/CustomAlert";
 
@@ -20,6 +21,7 @@ interface ClearanceItem {
     date: string;
     status: string;
     assigner?: string | null;
+    assigned_by?: number | null;
     is_approved_by_me?: boolean;
     [key: string]: unknown;
 }
@@ -115,6 +117,7 @@ const Clearances = () => {
 
     const [showModal, setShowModal] = useState(false);
     const [showDetailsModal, setShowDetailsModal] = useState(false);
+    const [showEditModal, setShowEditModal] = useState(false);
 
     const [myClearances, setMyClearances] =
         useState<ClearanceItem[]>([]);
@@ -128,6 +131,9 @@ const Clearances = () => {
 
     const [canClearClearances, setCanClearClearances] =
         useState(false);
+
+    const [currentEmployeeId, setCurrentEmployeeId] =
+        useState<number | null>(null);
 
     const { showAlert, AlertComponent } = useCustomAlert();
 
@@ -258,6 +264,9 @@ const Clearances = () => {
                                 .join(" ")
                             : null,
 
+                    assigned_by:
+                        clearance.assigned_by ?? null,
+
                     is_approved_by_me:
                         isApprovedByMe
                 };
@@ -331,10 +340,15 @@ const Clearances = () => {
                 setCanClearClearances(
                     !!perms.can_clear_clearances
                 );
+
+                setCurrentEmployeeId(
+                    perms.employee_id ?? null
+                );
             })
-            .catch(() =>
-                setCanClearClearances(false)
-            );
+            .catch(() => {
+                setCanClearClearances(false);
+                setCurrentEmployeeId(null);
+            });
     }, []);
 
     // ---------------------------------------------------------
@@ -463,6 +477,27 @@ const Clearances = () => {
     }, [clearTarget, showAlert]);
 
     // ---------------------------------------------------------
+    // DELETE CLEARANCE
+    // ---------------------------------------------------------
+
+    const handleDeleteClearance = useCallback(async (clearanceId: number) => {
+        if (!window.confirm("Are you sure you want to delete this clearance? This action cannot be undone.")) {
+            return;
+        }
+
+        try {
+            await apiRequest(`/clearances/${clearanceId}`, "DELETE");
+            showAlert("success", "Clearance deleted successfully.");
+            fetchClearances(); // Refresh the list
+        } catch (error: any) {
+            showAlert(
+                "error",
+                error?.response?.data?.message || "Failed to delete clearance."
+            );
+        }
+    }, [showAlert]);
+
+    // ---------------------------------------------------------
     // DESKTOP TABLE COLUMNS
     // ---------------------------------------------------------
 
@@ -544,21 +579,36 @@ const Clearances = () => {
         {
             dataField: "actions",
             text: "Actions",
-            formatter: (_cell, row) => (
-                <div className="d-flex flex-wrap gap-1">
-                    <Button
-                        variant="success"
-                        size="sm"
-                        onClick={() =>
-                            handleViewDetails(row)
-                        }
-                    >
-                        View
-                    </Button>
+            formatter: (_cell, row) => {
+                const isCleared = (row.status || "").toLowerCase() === "cleared";
+                const isAssignedByMe = currentEmployeeId !== null && row.assigned_by === currentEmployeeId;
 
-                    {(row.status || "")
-                        .toLowerCase() !==
-                        "cleared" && (
+                return (
+                    <div className="d-flex flex-wrap gap-1">
+                        <Button
+                            variant="success"
+                            size="sm"
+                            onClick={() =>
+                                handleViewDetails(row)
+                            }
+                        >
+                            View
+                        </Button>
+
+                        {!isCleared && isAssignedByMe && (
+                            <Button
+                                variant="info"
+                                size="sm"
+                                onClick={() => {
+                                    setSelectedClearanceId(row.id);
+                                    setShowEditModal(true);
+                                }}
+                            >
+                                Edit
+                            </Button>
+                        )}
+
+                        {!isCleared && (
                             <Button
                                 variant="primary"
                                 size="sm"
@@ -570,23 +620,36 @@ const Clearances = () => {
                             </Button>
                         )}
 
-                    {!row.is_approved_by_me &&
-                        row.status !== "Approved" &&
-                        row.status !== "Cleared" && (
+                        {!row.is_approved_by_me &&
+                            row.status !== "Approved" &&
+                            !isCleared && (
+                                <Button
+                                    variant="success"
+                                    size="sm"
+                                    onClick={() =>
+                                        handleApprove(row)
+                                    }
+                                >
+                                    Approve
+                                </Button>
+                            )}
+
+                        {!isCleared && isAssignedByMe && (
                             <Button
-                                variant="success"
+                                variant="danger"
                                 size="sm"
                                 onClick={() =>
-                                    handleApprove(row)
+                                    handleDeleteClearance(row.id)
                                 }
                             >
-                                Approve
+                                Delete
                             </Button>
                         )}
-                </div>
-            )
+                    </div>
+                );
+            }
         }
-    ], [handleViewDetails, handleReviewClick, handleApprove]);
+    ], [handleViewDetails, handleReviewClick, handleApprove, currentEmployeeId]);
 
     const markClearedColumn = useMemo((): ColumnDefinition<ClearanceItem> => ({
         dataField: "mark_cleared",
@@ -660,23 +723,38 @@ const Clearances = () => {
                 formatter: (
                     _cell,
                     row
-                ) => (
-                    <div className="d-flex flex-wrap gap-1">
-                        <Button
-                            variant="success"
-                            size="sm"
-                            onClick={() =>
-                                handleViewDetails(
-                                    row
-                                )
-                            }
-                        >
-                            View
-                        </Button>
+                ) => {
+                    const isCleared = (row.status || "").toLowerCase() === "cleared";
+                    const isAssignedByMe = currentEmployeeId !== null && row.assigned_by === currentEmployeeId;
 
-                        {(row.status || "")
-                            .toLowerCase() !==
-                            "cleared" && (
+                    return (
+                        <div className="d-flex flex-wrap gap-1">
+                            <Button
+                                variant="success"
+                                size="sm"
+                                onClick={() =>
+                                    handleViewDetails(
+                                        row
+                                    )
+                                }
+                            >
+                                View
+                            </Button>
+
+                            {!isCleared && isAssignedByMe && (
+                                <Button
+                                    variant="info"
+                                    size="sm"
+                                    onClick={() => {
+                                        setSelectedClearanceId(row.id);
+                                        setShowEditModal(true);
+                                    }}
+                                >
+                                    Edit
+                                </Button>
+                            )}
+
+                            {!isCleared && (
                                 <Button
                                     variant="primary"
                                     size="sm"
@@ -689,8 +767,21 @@ const Clearances = () => {
                                     Remarks
                                 </Button>
                             )}
-                    </div>
-                )
+
+                            {!isCleared && isAssignedByMe && (
+                                <Button
+                                    variant="danger"
+                                    size="sm"
+                                    onClick={() =>
+                                        handleDeleteClearance(row.id)
+                                    }
+                                >
+                                    Delete
+                                </Button>
+                            )}
+                        </div>
+                    );
+                }
             };
         }
 
@@ -708,7 +799,7 @@ const Clearances = () => {
         }
 
         return filtered;
-    }, [baseColumns, canClearClearances, markClearedColumn, handleViewDetails, handleReviewClick]);
+    }, [baseColumns, canClearClearances, markClearedColumn, handleViewDetails, handleReviewClick, currentEmployeeId]);
 
     // ---------------------------------------------------------
     // MOBILE SEARCH FILTERING
@@ -792,6 +883,7 @@ const Clearances = () => {
         const isCleared =
             (row.status || "").toLowerCase() ===
             "cleared";
+        const isAssignedByMe = currentEmployeeId !== null && row.assigned_by === currentEmployeeId;
 
         return (
             <div
@@ -894,6 +986,20 @@ const Clearances = () => {
                             View Details
                         </Button>
 
+                        {!isCleared && isAssignedByMe && (
+                            <Button
+                                variant="info"
+                                size="sm"
+                                className="w-100"
+                                onClick={() => {
+                                    setSelectedClearanceId(row.id);
+                                    setShowEditModal(true);
+                                }}
+                            >
+                                Edit Clearance
+                            </Button>
+                        )}
+
                         {!isCleared && (
                             <Button
                                 variant="primary"
@@ -954,11 +1060,24 @@ const Clearances = () => {
                             </Button>
                         )}
 
+                        {!isCleared && isAssignedByMe && (
+                            <Button
+                                variant="danger"
+                                size="sm"
+                                className="w-100"
+                                onClick={() =>
+                                    handleDeleteClearance(row.id)
+                                }
+                            >
+                                Delete
+                            </Button>
+                        )}
+
                     </div>
                 </div>
             </div>
         );
-    }, [handleViewDetails, handleReviewClick, handleApprove, canClearClearances, handleClear]);
+    }, [handleViewDetails, handleReviewClick, handleApprove, canClearClearances, handleClear, handleDeleteClearance, currentEmployeeId]);
 
     // ---------------------------------------------------------
     // LOADING
@@ -1197,6 +1316,23 @@ const Clearances = () => {
                 clearanceId={
                     selectedClearanceId ??
                     0
+                }
+                onUpdated={
+                    fetchClearances
+                }
+            />
+
+            <ClearanceEditModal
+                show={
+                    showEditModal
+                }
+                onHide={() =>
+                    setShowEditModal(
+                        false
+                    )
+                }
+                clearanceId={
+                    selectedClearanceId
                 }
                 onUpdated={
                     fetchClearances
