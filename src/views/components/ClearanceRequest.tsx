@@ -104,7 +104,6 @@ const ClearanceRequest: React.FC = () => {
     const [filteredTemplates, setFilteredTemplates] = useState<TemplateData[]>([]);
     const [assigning, setAssigning] = useState(false);
     const [currentEmployeeId, setCurrentEmployeeId] = useState<number | null>(null);
-    // const [templates, setTemplates] = useState<TemplateData[]>([]);
     // --- Template Preview Modal State ---
     const [showViewModal, setShowViewModal] = useState(false);
     const [templatePreviewData, setTemplatePreviewData] = useState<{ title: string; purpose: string; footer_message?: string }>({ title: "", purpose: "", footer_message: "" });
@@ -140,7 +139,7 @@ const ClearanceRequest: React.FC = () => {
         {
             dataField: "id",
             text: "Action",
-            formatter: (_cell: string | number | undefined, row: ClearanceRequest) => {
+            formatter: (_cell, row) => {
                 const isCleared = (row.clearance_status || "").toLowerCase() === "cleared";
                 const isAssignedByMe = currentEmployeeId !== null && row.assigned_by === currentEmployeeId;
 
@@ -167,37 +166,6 @@ const ClearanceRequest: React.FC = () => {
             }
         }
     ];
-
-    // const templateColumns: ColumnDefinition<TemplateData>[] = [
-    //     { dataField: "title", text: "Title", sortable: true },
-    //     { dataField: "purpose", text: "Purpose", sortable: true },
-    //     {
-    //         dataField: "template_id",
-    //         text: "Actions",
-    //         headerStyle: { width: '160px' },
-    //         formatter: (_cell: string | number | undefined, row: TemplateData) => (
-    //             <>
-    //                 <Button
-    //                     variant="primary"
-    //                     size="sm"
-    //                     onClick={() => handleViewTemplate(row)}
-    //                     className="ms-2"
-    //                 >
-    //                     View
-    //                 </Button>
-    //                 <Button
-    //                     variant="success"
-    //                     size="sm"
-    //                     onClick={() => handleAssignTemplate(row)}
-    //                     disabled={assigning}
-    //                     className="ms-2"
-    //                 >
-    //                     {assigning ? <Spinner animation="border" size="sm" /> : "Assign"}
-    //                 </Button>
-    //             </>
-    //         )
-    //     }
-    // ];
 
     // --- Filtering ---
     const filterPredicate = (request: ClearanceRequest, searchTerm: string) =>
@@ -449,17 +417,14 @@ const ClearanceRequest: React.FC = () => {
                 `/templates`, "GET"
             );
             if (res.data.success) {
-                // setTemplates(res.data.data);
                 const sorted = [...res.data.data].sort((a, b) =>
                     a.title.localeCompare(b.title)
                 );
                 setFilteredTemplates(sorted);
             } else {
-                // setTemplates([]);
                 setFilteredTemplates([]);
             }
         } catch {
-            // setTemplates([]);
             setFilteredTemplates([]);
         }
     };
@@ -500,14 +465,6 @@ const ClearanceRequest: React.FC = () => {
                 showSearch
                 showPagination
                 pageSize={10}
-                // classes={{
-                //     table: 'table-sm',
-                //     header: 'py-2',
-                //     row: 'align-middle'
-                // }}
-                // style={{
-                //     cell: { padding: '0.4rem 0.6rem' }
-                // }}
                 additionalFilters={
                     <div className="d-flex flex-column flex-sm-row align-items-start align-items-sm-center mt-2 mt-sm-0">
                         <label htmlFor="departmentFilter" className="me-2 mb-1 mb-sm-0 small text-muted">Department:</label>

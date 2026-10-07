@@ -7,24 +7,6 @@ import DynamicTable, { ColumnDefinition } from "../../utils/DynamicTable";
 import CreateTemplate from "./TemplateCreation";
 import TemplatePreviewModal from "./TemplatePreviewModal";
 
-// Template list and management
-// interface SignatoryData {
-//     template_id: number;
-//     employee_id: number;
-//     employee: {
-//         employee_id: number;
-//         first_name: string;
-//         last_name: string;
-//         email: string;
-//         role_id: string;
-//         company_id: string;
-//         department_id: string;
-//         branch_id: string;
-//     };
-//     createdAt?: string;
-//     updatedAt?: string; 
-// }
-
 interface TemplateData {
     template_id: number;
     title: string;
@@ -35,6 +17,9 @@ interface TemplateData {
     creator_name?: string;
     updater_name?: string;
     createdAt?: string;
+    updatedAt?: string;
+    deletedAt?: string;
+    creator_email?: string;
 }
 
 const Template: React.FC = () => {
@@ -85,8 +70,8 @@ const Template: React.FC = () => {
             title: template.title,
             purpose: template.purpose,
             footer_message: template.footer_message ?? "",
-            creator_employee_id: template.creator_employee_id,
-            template_id: template.template_id
+            creator_employee_id: template.creator_employee_id
+            // template_id intentionally omitted — not part of the modal's data prop
         });
         try {
             const signatoryResponse = await apiRequest(`/template/${template.template_id}/signatories`, "GET") as any;
@@ -128,7 +113,7 @@ const Template: React.FC = () => {
     const columns: ColumnDefinition<TemplateData & { creator_email?: string }>[] = [
         {
             dataField: "title",
-            text: "Template Title", // changed here
+            text: "Template Title",
             sortable: true,
             minWidth: '220px',
             formatter: (title, row) => (
